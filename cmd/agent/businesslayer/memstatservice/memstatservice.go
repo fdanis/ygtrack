@@ -43,7 +43,7 @@ func (m *MemStatService) Run(secondsForUpdateTimer int, secondsForSendTimer int)
 	now := time.Now()
 	ticker := time.NewTicker(1 * time.Second)
 	for {
-		_ = <-ticker.C
+		<-ticker.C
 		dur := time.Until(now)
 		if int(dur.Seconds())%secondsForUpdateTimer == 0 {
 			m.Update()

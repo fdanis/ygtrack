@@ -13,8 +13,9 @@ func (h Helper) Get(url string) error {
 	if err != nil {
 		return err
 	}
+	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {
-		return fmt.Errorf("Got wrong http status (%d)", res.StatusCode)
+		return fmt.Errorf("got wrong http status (%d)", res.StatusCode)
 	}
 	return nil
 }
@@ -24,8 +25,9 @@ func (h Helper) Post(url string) error {
 	if err != nil {
 		return err
 	}
+	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {
-		return fmt.Errorf("Got wrong http status (%d)", res.StatusCode)
+		return fmt.Errorf("got wrong http status (%d)", res.StatusCode)
 	}
 	return nil
 }
