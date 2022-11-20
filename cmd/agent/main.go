@@ -40,5 +40,5 @@ var (
 func main() {
 	//memstatservice.HTTPHelper = fakehttphelper.Helper{}
 	memStatS := memstatservice.NewMemStatService(gaugeList[:], "http://localhost:8080/update")
-	memStatS.Run(1, 3)
+	memStatS.Run(2, 10)
 }

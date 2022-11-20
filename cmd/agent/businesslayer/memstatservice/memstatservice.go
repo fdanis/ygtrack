@@ -12,7 +12,7 @@ import (
 	"github.com/fdanis/ygtrack/internal/helpers/httphelper"
 )
 
-var HTTPHelper helpers.HttpHelper = httphelper.Helper{}
+var HTTPHelper helpers.HTTPHelper = httphelper.Helper{}
 
 type MemStatService struct {
 	curent                runtime.MemStats
@@ -39,16 +39,16 @@ func NewMemStatService(gaugelist []string, url string) *MemStatService {
 	return m
 }
 
-func (m *MemStatService) Run(secondsForUpdateTimer int, secondsForSendTimer int) {
+func (m *MemStatService) Run(pollInterval int, reportInterval int) {
 	now := time.Now()
 	ticker := time.NewTicker(1 * time.Second)
 	for {
 		<-ticker.C
 		dur := time.Until(now)
-		if int(dur.Seconds())%secondsForUpdateTimer == 0 {
+		if int(dur.Seconds())%pollInterval == 0 {
 			m.Update()
 		}
-		if int(dur.Seconds())%secondsForSendTimer == 0 {
+		if int(dur.Seconds())%reportInterval == 0 {
 			m.Send()
 		}
 	}
