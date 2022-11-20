@@ -12,7 +12,7 @@ import (
 	"github.com/fdanis/ygtrack/internal/helpers/httphelper"
 )
 
-var HttpHelper helpers.HttpHelper = httphelper.Helper{}
+var HTTPHelper helpers.HttpHelper = httphelper.Helper{}
 
 type MemStatService struct {
 	curent                runtime.MemStats
@@ -40,10 +40,9 @@ func NewMemStatService(gaugelist []string, url string) *MemStatService {
 }
 
 func (m *MemStatService) Run(secondsForUpdateTimer int, secondsForSendTimer int) {
-
 	now := time.Now()
 	ticker := time.NewTicker(1 * time.Second)
-	for true {
+	for {
 		_ = <-ticker.C
 		dur := time.Until(now)
 		if int(dur.Seconds())%secondsForUpdateTimer == 0 {
@@ -94,7 +93,7 @@ func sendCounter(name string, val uint64, host string) {
 
 func httpSendStat(name string, t string, val string, host string) {
 	url := fmt.Sprintf("%s/%s/%s/%s", host, t, name, val)
-	err := HttpHelper.Post(url)
+	err := HTTPHelper.Post(url)
 	if err != nil {
 		log.Printf("could not send %s metric with value %s %v", name, val, err)
 	}
