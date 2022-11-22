@@ -43,7 +43,7 @@ func (h MetricHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		h.CounterRepo.Add(dataclass.CounterMetric{Name: urlitem[2], Value: val})
 	default:
-		http.Error(w, "Incorrect type", http.StatusBadRequest)
+		http.Error(w, "Incorrect type", http.StatusNotImplemented)
 		return
 	}
 
