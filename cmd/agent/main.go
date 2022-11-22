@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/fdanis/ygtrack/cmd/agent/businesslayer/memstatservice"
-	"github.com/fdanis/ygtrack/internal/helpers/fakehttphelper"
+	"github.com/fdanis/ygtrack/internal/helpers/httphelper"
 )
 
 var (
@@ -41,7 +41,7 @@ var (
 )
 
 func main() {
-	hhelper := fakehttphelper.Helper{}
+	hhelper := httphelper.Helper{}
 	memStatS := memstatservice.NewMemStatService(gaugeList[:], hhelper, runtime.ReadMemStats)
 	Run(memStatS, 2, 10)
 }
