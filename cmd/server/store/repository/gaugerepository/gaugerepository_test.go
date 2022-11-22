@@ -1,7 +1,6 @@
 package gaugerepository
 
 import (
-	"fmt"
 	"reflect"
 	"testing"
 
@@ -62,7 +61,6 @@ func TestGaugeRepository_Add(t *testing.T) {
 
 			for _, v := range tt.args {
 				if err := r.Add(v.data); (err != nil) != tt.wantErr {
-					fmt.Println(err)
 					t.Errorf("GaugeRepository.Add() error = %v, wantErr %v", err, tt.wantErr)
 				}
 				typ[v.data.Name] = v.data.Value
@@ -119,7 +117,6 @@ func TestGaugeRepository_GetByName(t *testing.T) {
 			}
 			got, err := r.GetByName(tt.args.name)
 			if (err != nil) != tt.wantErr {
-				fmt.Println(err)
 				t.Errorf("GaugeRepository.GetByName() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}

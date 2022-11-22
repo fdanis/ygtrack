@@ -1,7 +1,6 @@
 package counterrepository
 
 import (
-	"fmt"
 	"reflect"
 	"testing"
 
@@ -62,7 +61,6 @@ func TestCounterRepository_Add(t *testing.T) {
 
 			for _, v := range tt.args {
 				if err := r.Add(v.data); (err != nil) != tt.wantErr {
-					fmt.Println(err)
 					t.Errorf("CounterRepository.Add() error = %v, wantErr %v", err, tt.wantErr)
 				}
 				typ[v.data.Name] += v.data.Value
@@ -119,7 +117,6 @@ func TestCounterRepository_GetByName(t *testing.T) {
 			}
 			got, err := r.GetByName(tt.args.name)
 			if (err != nil) != tt.wantErr {
-				fmt.Println(err)
 				t.Errorf("CounterRepository.GetByName() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}

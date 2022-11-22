@@ -16,7 +16,7 @@ func NewGaugeRepository() GaugeRepository {
 
 func (r *GaugeRepository) GetAll() ([]dataclass.GaugeMetric, error) {
 	if r.Datastorage == nil {
-		return nil, errors.New("Data storage is not difened")
+		return nil, errors.New("data storage is undefined")
 	}
 	list := []dataclass.GaugeMetric{}
 	for k, v := range *r.Datastorage {
@@ -26,7 +26,7 @@ func (r *GaugeRepository) GetAll() ([]dataclass.GaugeMetric, error) {
 }
 func (r *GaugeRepository) GetByName(name string) (*dataclass.GaugeMetric, error) {
 	if r.Datastorage == nil {
-		return nil, errors.New("Data storage is not difened")
+		return nil, errors.New("data storage is undefined")
 	}
 	if v, ok := (*r.Datastorage)[name]; ok {
 		return &dataclass.GaugeMetric{Name: name, Value: v}, nil
@@ -36,7 +36,7 @@ func (r *GaugeRepository) GetByName(name string) (*dataclass.GaugeMetric, error)
 
 func (r *GaugeRepository) Add(data dataclass.GaugeMetric) error {
 	if r.Datastorage == nil {
-		return errors.New("Data storage is not difened")
+		return errors.New("data storage is undefined")
 	}
 	(*r.Datastorage)[data.Name] = data.Value
 	return nil

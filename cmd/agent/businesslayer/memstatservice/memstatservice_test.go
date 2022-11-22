@@ -15,7 +15,7 @@ type mockMemStat struct {
 	WasCount uint
 }
 
-func mock_read_stat(stat *mockMemStat) {
+func mockReadStat(stat *mockMemStat) {
 	stat.WasCount++
 	stat.UInt64 = uint64(stat.WasCount) * 1
 	stat.Float = float64(stat.WasCount) * 1.1
@@ -26,17 +26,17 @@ const (
 	fakeurl = "fake"
 )
 
-type mockHttpHelper struct {
+type mockHTTPHelper struct {
 	paths map[string]int
 }
 
-func (h *mockHttpHelper) Get(url string) error {
+func (h *mockHTTPHelper) Get(url string) error {
 	return nil
 }
 
-func (h *mockHttpHelper) Post(url string) error {
+func (h *mockHTTPHelper) Post(url string) error {
 	fmt.Println(url)
-	for k, _ := range h.paths {
+	for k := range h.paths {
 		if strings.Contains(url, k) {
 			h.paths[k]++
 		}
@@ -60,7 +60,7 @@ func TestMemStatService_New(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			res := NewMemStatService[mockMemStat]([]string{"Float", "IncorectParam"}, nil, mock_read_stat)
+			res := NewMemStatService[mockMemStat]([]string{"Float", "IncorectParam"}, nil, mockReadStat)
 			assert.Equal(t, res.curent.UInt64, tt.want.UInt64, "uint property was not sent")
 			assert.Equal(t, res.curent.Float, tt.want.Float, "uint property was not sent")
 			assert.Equal(t, res.curent.UInt32, tt.want.UInt32, "uint property was not sent")
@@ -87,7 +87,7 @@ func TestMemStatService_Update(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			res := NewMemStatService[mockMemStat]([]string{"First"}, nil, mock_read_stat)
+			res := NewMemStatService[mockMemStat]([]string{"First"}, nil, mockReadStat)
 			res.Update()
 			assert.Equal(t, res.curent.UInt64, tt.want.UInt64, "uint property not valid")
 			assert.Equal(t, res.curent.Float, tt.want.Float, "uint property  not valid")
@@ -104,13 +104,13 @@ func TestMemStatService_Send(t *testing.T) {
 		values   mockMemStat
 		want     mockMemStat
 		wantPool uint64
-		hhelper  mockHttpHelper
+		hhelper  mockHTTPHelper
 	}{
 		{
 			name:   "check update",
 			values: mockMemStat{},
 			want:   mockMemStat{UInt64: 1, Float: 2.2, UInt32: 3, WasCount: 1},
-			hhelper: mockHttpHelper{paths: map[string]int{
+			hhelper: mockHTTPHelper{paths: map[string]int{
 				fakeurl + "/" + gauge + "/" + "Float/2.20":       0,
 				fakeurl + "/" + counter + "/" + pollCount + "/1": 0,
 				fakeurl + "/" + gauge + "/" + randomCount + "/":  0,
@@ -120,7 +120,7 @@ func TestMemStatService_Send(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			res := NewMemStatService[mockMemStat]([]string{"Float"}, &tt.hhelper, mock_read_stat)
+			res := NewMemStatService[mockMemStat]([]string{"Float"}, &tt.hhelper, mockReadStat)
 			res.Update()
 			res.Send(fakeurl)
 			for k, v := range tt.hhelper.paths {

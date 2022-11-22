@@ -10,7 +10,7 @@ import (
 
 var (
 	gaugeList = [...]string{
-		"Alloc1",
+		"Alloc",
 		"BuckHashSys",
 		"Frees",
 		"GCCPUFraction",

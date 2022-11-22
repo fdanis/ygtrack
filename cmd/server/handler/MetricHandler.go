@@ -35,7 +35,6 @@ func (h MetricHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		h.GaugeRepo.Add(dataclass.GaugeMetric{Name: urlitem[2], Value: val})
-		break
 	case "counter":
 		val, err := strconv.ParseUint(urlitem[3], 10, 64)
 		if err != nil {
@@ -43,12 +42,10 @@ func (h MetricHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		h.CounterRepo.Add(dataclass.CounterMetric{Name: urlitem[2], Value: val})
-		break
 	default:
 		http.Error(w, "Incorrect type", http.StatusBadRequest)
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
-	return
 }

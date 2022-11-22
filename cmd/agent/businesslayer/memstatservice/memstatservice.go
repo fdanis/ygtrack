@@ -42,6 +42,7 @@ func NewMemStatService[T any](gaugelist []string, hhelp helpers.HTTPHelper, stat
 func (m *MemStatService[T]) initReflection() {
 	m.reflectValue = make(map[string]reflect.Value)
 	r := reflect.ValueOf(&m.curent)
+
 	for _, val := range m.metrics {
 		field := reflect.Indirect(r).FieldByName(val)
 		if field.IsValid() {
@@ -60,8 +61,12 @@ func (m *MemStatService[T]) Update() {
 func (m *MemStatService[T]) Send(url string) {
 	fmt.Printf("send metrics %s \n", time.Now().Format("15:04:05"))
 	for _, val := range m.metrics {
-		m.httpSendStat(val, gauge, getReflectValue(m.reflectValue[val]), url)
+		if r, ok := m.reflectValue[val]; ok {
+			//use go
+			m.httpSendStat(val, gauge, getReflectValue(r), url)
+		}
 	}
+	//use go
 	m.httpSendStat(pollCount, counter, fmt.Sprintf("%d", m.pollCount), url)
 	m.httpSendStat(randomCount, gauge, fmt.Sprintf("%d", m.randomCount), url)
 }
