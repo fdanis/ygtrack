@@ -5,104 +5,86 @@ import (
 	"log"
 	"math/rand"
 	"reflect"
-	"runtime"
 	"time"
 
 	"github.com/fdanis/ygtrack/internal/helpers"
-	"github.com/fdanis/ygtrack/internal/helpers/httphelper"
 )
 
-var HTTPHelper helpers.HTTPHelper = httphelper.Helper{}
-
-type MemStatService struct {
-	curent                runtime.MemStats
-	metrics               []string
-	reflectValue          map[string]reflect.Value
-	url                   string
-	pollCount             uint64
-	randomCount           uint64
-	r                     *rand.Rand
-	secondsForUpdateTimer int
-	secondsForSendTimer   int
+type MemStatService[T any] struct {
+	curent       T
+	metrics      []string
+	reflectValue map[string]reflect.Value
+	pollCount    uint64
+	randomCount  uint64
+	r            *rand.Rand
+	httpHelper   helpers.HTTPHelper
+	updatefunc   func(obj *T)
 }
 
-func NewMemStatService(gaugelist []string, url string) *MemStatService {
-	m := new(MemStatService)
+const (
+	gauge       = "gauge"
+	counter     = "counter"
+	pollCount   = "PollCount"
+	randomCount = "RandomCount"
+)
+
+func NewMemStatService[T any](gaugelist []string, hhelp helpers.HTTPHelper, statupdate func(obj *T)) *MemStatService[T] {
+	m := new(MemStatService[T])
 	m.metrics = gaugelist
-	m.url = url
 	source := rand.NewSource(time.Now().UnixNano())
 	m.r = rand.New(source)
-	runtime.ReadMemStats(&m.curent)
-	if m.reflectValue == nil {
-		m.initReflection()
-	}
+	m.updatefunc = statupdate
+	m.httpHelper = hhelp
+	m.updatefunc(&m.curent)
+	m.initReflection()
 	return m
 }
-
-func (m *MemStatService) Run(pollInterval int, reportInterval int) {
-	now := time.Now()
-	ticker := time.NewTicker(1 * time.Second)
-	for {
-		<-ticker.C
-		dur := time.Until(now)
-		if int(dur.Seconds())%pollInterval == 0 {
-			m.Update()
-		}
-		if int(dur.Seconds())%reportInterval == 0 {
-			m.Send()
+func (m *MemStatService[T]) initReflection() {
+	m.reflectValue = make(map[string]reflect.Value)
+	r := reflect.ValueOf(&m.curent)
+	for _, val := range m.metrics {
+		field := reflect.Indirect(r).FieldByName(val)
+		if field.IsValid() {
+			m.reflectValue[val] = field
 		}
 	}
 }
 
-func (m *MemStatService) Update() {
+func (m *MemStatService[T]) Update() {
 	fmt.Printf("update metrics %s \n", time.Now().Format("15:04:05"))
-	runtime.ReadMemStats(&m.curent)
+	m.updatefunc(&m.curent)
 	m.pollCount++
 	m.randomCount = m.r.Uint64()
 }
 
-func (m *MemStatService) Send() {
+func (m *MemStatService[T]) Send(url string) {
 	fmt.Printf("send metrics %s \n", time.Now().Format("15:04:05"))
 	for _, val := range m.metrics {
-		go sendGaugeReflect(val, m.reflectValue[val], m.url)
+		m.httpSendStat(val, gauge, getReflectValue(m.reflectValue[val]), url)
 	}
-	go sendCounter("PollCount", m.pollCount, m.url)
-	go sendGaugeNumber("RandomCount", m.randomCount, m.url)
+	m.httpSendStat(pollCount, counter, fmt.Sprintf("%d", m.pollCount), url)
+	m.httpSendStat(randomCount, gauge, fmt.Sprintf("%d", m.randomCount), url)
 }
 
-func sendGaugeNumber(name string, val uint64, host string) {
-	httpSendStat(name, "gauge", fmt.Sprintf("%d", val), host)
-}
-
-func sendGaugeReflect(name string, val reflect.Value, host string) {
+func getReflectValue(val reflect.Value) string {
+	var v string
 	switch val.Type().Kind() {
 	case reflect.Uint64:
-		httpSendStat(name, "gauge", fmt.Sprintf("%d", val.Uint()), host)
+		v = fmt.Sprintf("%d", val.Uint())
 	case reflect.Float64:
-		httpSendStat(name, "gauge", fmt.Sprintf("%.f2", val.Float()), host)
+		v = fmt.Sprintf("%.2f", val.Float())
 	case reflect.Uint32:
-		httpSendStat(name, "gauge", fmt.Sprintf("%d", val.Uint()), host)
+		v = fmt.Sprintf("%d", val.Uint())
 	default:
-		httpSendStat(name, "gauge", "-1", host)
+		v = "-1"
 	}
+	return v
 }
 
-func sendCounter(name string, val uint64, host string) {
-	httpSendStat(name, "counter", fmt.Sprintf("%d", val), host)
-}
-
-func httpSendStat(name string, t string, val string, host string) {
+func (m *MemStatService[T]) httpSendStat(name string, t string, val string, host string) {
 	url := fmt.Sprintf("%s/%s/%s/%s", host, t, name, val)
-	err := HTTPHelper.Post(url)
+	err := m.httpHelper.Post(url)
 	if err != nil {
 		log.Printf("could not send %s metric with value %s %v", name, val, err)
-	}
-}
-
-func (m *MemStatService) initReflection() {
-	m.reflectValue = make(map[string]reflect.Value)
-	r := reflect.ValueOf(m.curent)
-	for _, val := range m.metrics {
-		m.reflectValue[val] = reflect.Indirect(r).FieldByName(val)
 	}
 }
