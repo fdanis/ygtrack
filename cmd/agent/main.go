@@ -12,7 +12,7 @@ import (
 const (
 	pollInterval   int    = 2
 	reportInterval int    = 10
-	serverUrl      string = "http://localhost:8080/update"
+	serverURL      string = "http://localhost:8080/update"
 )
 
 var (
@@ -61,7 +61,7 @@ func main() {
 			go m.Update()
 		}
 		if int(dur.Seconds())%reportInterval == 0 {
-			go m.Send(serverUrl)
+			go m.Send(serverURL)
 		}
 	}
 }

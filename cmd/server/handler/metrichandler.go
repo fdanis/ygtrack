@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/fdanis/ygtrack/cmd/server/models"
 	"github.com/fdanis/ygtrack/cmd/server/render"
@@ -19,7 +20,7 @@ type MetricHandler struct {
 }
 
 func (h *MetricHandler) Update(w http.ResponseWriter, r *http.Request) {
-	typeMetric := chi.URLParam(r, "type")
+	typeMetric := strings.ToLower(chi.URLParam(r, "type"))
 	nameMetric := chi.URLParam(r, "name")
 	valueMetric := chi.URLParam(r, "value")
 
@@ -47,10 +48,9 @@ func (h *MetricHandler) Update(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *MetricHandler) GetValue(w http.ResponseWriter, r *http.Request) {
-	typeMetric := chi.URLParam(r, "type")
+	typeMetric := strings.ToLower(chi.URLParam(r, "type"))
 	nameMetric := chi.URLParam(r, "name")
 
-	fmt.Printf("type = %s", typeMetric)
 	result := ""
 	switch typeMetric {
 	case "gauge":
@@ -62,7 +62,7 @@ func (h *MetricHandler) GetValue(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
-		result = fmt.Sprintf("%.2f", met.Value)
+		result = fmt.Sprintf("%.3f", met.Value)
 
 	case "counter":
 		met, err := h.CounterRepo.GetByName(nameMetric)
@@ -97,7 +97,7 @@ func (h *MetricHandler) Get(w http.ResponseWriter, r *http.Request) {
 
 	result := map[string]string{}
 	for _, v := range gaugeList {
-		result[v.Name] = fmt.Sprintf("%.2f", v.Value)
+		result[v.Name] = fmt.Sprintf("%.3f", v.Value)
 	}
 	for _, v := range counterList {
 		result[v.Name] = fmt.Sprintf("%d", v.Value)
