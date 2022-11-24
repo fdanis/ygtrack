@@ -4,14 +4,8 @@ import (
 	"github.com/fdanis/ygtrack/cmd/server/store/dataclass"
 )
 
-type GaugeRepository interface {
-	GetAll() ([]dataclass.GaugeMetric, error)
-	GetByName(name string) (*dataclass.GaugeMetric, error)
-	Add(data dataclass.GaugeMetric) error
-}
-
-type CounterRepository interface {
-	GetAll() ([]dataclass.CounterMetric, error)
-	GetByName(name string) (*dataclass.CounterMetric, error)
-	Add(data dataclass.CounterMetric) error
+type MetricRepository[T any] interface {
+	GetAll() ([]dataclass.Metric[T], error)
+	GetByName(name string) (*dataclass.Metric[T], error)
+	Add(data dataclass.Metric[T]) error
 }

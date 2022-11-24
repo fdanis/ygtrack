@@ -4,8 +4,15 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/fdanis/ygtrack/cmd/agent/businesslayer/memstatservice"
+	"github.com/fdanis/ygtrack/cmd/agent/memstatservice"
 	"github.com/fdanis/ygtrack/internal/helpers/httphelper"
+	//"github.com/fdanis/ygtrack/internal/helpers/fakehttphelper"
+)
+
+const (
+	pollInterval   int    = 2
+	reportInterval int    = 10
+	serverUrl      string = "http://localhost:8080/update"
 )
 
 var (
@@ -42,21 +49,19 @@ var (
 
 func main() {
 	hhelper := httphelper.Helper{}
-	memStatS := memstatservice.NewMemStatService(gaugeList[:], hhelper, runtime.ReadMemStats)
-	Run(memStatS, 2, 10)
-}
+	//hhelper := fakehttphelper.Helper{}
+	m := memstatservice.NewMemStatService(gaugeList[:], hhelper, runtime.ReadMemStats)
 
-func Run(m *memstatservice.MemStatService[runtime.MemStats], pollInterval int, reportInterval int) {
 	now := time.Now()
-	ticker := time.NewTicker(1 * time.Second)
+	t := time.NewTicker(1 * time.Second)
 	for {
-		<-ticker.C
+		<-t.C
 		dur := time.Until(now)
 		if int(dur.Seconds())%pollInterval == 0 {
-			m.Update()
+			go m.Update()
 		}
 		if int(dur.Seconds())%reportInterval == 0 {
-			m.Send("http://localhost:8080/update")
+			go m.Send(serverUrl)
 		}
 	}
 }

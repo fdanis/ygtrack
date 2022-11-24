@@ -5,6 +5,7 @@ import (
 	"log"
 	"math/rand"
 	"reflect"
+	"sync"
 	"time"
 
 	"github.com/fdanis/ygtrack/internal/helpers"
@@ -19,6 +20,7 @@ type MemStatService[T any] struct {
 	r            *rand.Rand
 	httpHelper   helpers.HTTPHelper
 	updatefunc   func(obj *T)
+	lock         sync.RWMutex
 }
 
 const (
@@ -53,18 +55,27 @@ func (m *MemStatService[T]) initReflection() {
 
 func (m *MemStatService[T]) Update() {
 	fmt.Printf("update metrics %s \n", time.Now().Format("15:04:05"))
+	m.lock.Lock()
+	defer m.lock.Unlock()
 	m.updatefunc(&m.curent)
 	m.pollCount++
 	m.randomCount = m.r.Uint64()
+
 }
 
 func (m *MemStatService[T]) Send(url string) {
 	fmt.Printf("send metrics %s \n", time.Now().Format("15:04:05"))
+	copymap := make(map[string]string, len(m.reflectValue))
+	m.lock.RLock()
 	for _, val := range m.metrics {
 		if r, ok := m.reflectValue[val]; ok {
-			//use go
-			m.httpSendStat(val, gauge, getReflectValue(r), url)
+			copymap[val] = getReflectValue(r)
 		}
+	}
+	m.lock.RUnlock()
+	for k, v := range copymap {
+		//use go
+		m.httpSendStat(k, gauge, v, url)
 	}
 	//use go
 	m.httpSendStat(pollCount, counter, fmt.Sprintf("%d", m.pollCount), url)

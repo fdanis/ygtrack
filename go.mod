@@ -10,4 +10,7 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-require github.com/stretchr/testify v1.8.1
+require (
+	github.com/go-chi/chi v1.5.4
+	github.com/stretchr/testify v1.8.1
+)
