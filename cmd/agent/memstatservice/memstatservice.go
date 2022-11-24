@@ -60,7 +60,6 @@ func (m *MemStatService[T]) Update() {
 	m.updatefunc(&m.curent)
 	m.pollCount++
 	m.randomCount = m.r.Int63()
-
 }
 
 func (m *MemStatService[T]) Send(url string) {
@@ -72,14 +71,16 @@ func (m *MemStatService[T]) Send(url string) {
 			copymap[val] = getReflectValue(r)
 		}
 	}
+	var poolCountValue = m.pollCount
+	var randomCountValue = m.randomCount
 	m.lock.RUnlock()
 	for k, v := range copymap {
 		//use go
 		m.httpSendStat(k, gauge, v, url)
 	}
 	//use go
-	m.httpSendStat(pollCount, counter, fmt.Sprintf("%d", m.pollCount), url)
-	m.httpSendStat(randomCount, gauge, fmt.Sprintf("%d", m.randomCount), url)
+	m.httpSendStat(pollCount, counter, fmt.Sprintf("%d", poolCountValue), url)
+	m.httpSendStat(randomCount, gauge, fmt.Sprintf("%d", randomCountValue), url)
 }
 
 func getReflectValue(val reflect.Value) string {

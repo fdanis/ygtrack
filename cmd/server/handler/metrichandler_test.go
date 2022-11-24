@@ -52,6 +52,19 @@ func TestMetricHandler_GetValue(t *testing.T) {
 			},
 		},
 		{
+			name: "positive test minus counter",
+			fields: fields{
+				counterStorage: &map[string]dataclass.Metric[int64]{"count": {Name: "Count", Value: -2345}},
+				gaugeStorage:   &map[string]dataclass.Metric[float64]{"test1": {Name: "TEst1", Value: 1}, "test2": {Name: "test2", Value: 2}},
+			},
+			args: args{typeName: "counter", metricName: "Count"},
+			want: want{
+				code:        200,
+				response:    "-2345",
+				contentType: "",
+			},
+		},
+		{
 			name: "fake_type_counter should be 501 #1",
 			fields: fields{
 				counterStorage: &map[string]dataclass.Metric[int64]{"count": {Name: "Count", Value: 5}},
