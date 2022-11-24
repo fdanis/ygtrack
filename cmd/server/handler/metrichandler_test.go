@@ -15,7 +15,7 @@ import (
 
 func TestMetricHandler_GetValue(t *testing.T) {
 	type fields struct {
-		counterStorage *map[string]dataclass.Metric[uint64]
+		counterStorage *map[string]dataclass.Metric[int64]
 		gaugeStorage   *map[string]dataclass.Metric[float64]
 	}
 
@@ -41,7 +41,7 @@ func TestMetricHandler_GetValue(t *testing.T) {
 		{
 			name: "positive test #1",
 			fields: fields{
-				counterStorage: &map[string]dataclass.Metric[uint64]{"count": {Name: "Count", Value: 5}},
+				counterStorage: &map[string]dataclass.Metric[int64]{"count": {Name: "Count", Value: 5}},
 				gaugeStorage:   &map[string]dataclass.Metric[float64]{"test1": {Name: "TEst1", Value: 1}, "test2": {Name: "test2", Value: 2}},
 			},
 			args: args{typeName: "counter", metricName: "Count"},
@@ -54,7 +54,7 @@ func TestMetricHandler_GetValue(t *testing.T) {
 		{
 			name: "fake_type_counter should be 501 #1",
 			fields: fields{
-				counterStorage: &map[string]dataclass.Metric[uint64]{"count": {Name: "Count", Value: 5}},
+				counterStorage: &map[string]dataclass.Metric[int64]{"count": {Name: "Count", Value: 5}},
 				gaugeStorage:   &map[string]dataclass.Metric[float64]{"test1": {Name: "TEst1", Value: 1}, "test2": {Name: "test2", Value: 2}},
 			},
 			args: args{typeName: "fake_counter", metricName: "Count"},
@@ -67,7 +67,7 @@ func TestMetricHandler_GetValue(t *testing.T) {
 		{
 			name: "incorect counter name",
 			fields: fields{
-				counterStorage: &map[string]dataclass.Metric[uint64]{"count": {Name: "Count", Value: 5}},
+				counterStorage: &map[string]dataclass.Metric[int64]{"count": {Name: "Count", Value: 5}},
 				gaugeStorage:   &map[string]dataclass.Metric[float64]{"test1": {Name: "TEst1", Value: 1}, "test2": {Name: "test2", Value: 2}},
 			},
 			args: args{typeName: "counter", metricName: "Fake_Count"},
@@ -80,7 +80,7 @@ func TestMetricHandler_GetValue(t *testing.T) {
 		{
 			name: "incorect gouge name",
 			fields: fields{
-				counterStorage: &map[string]dataclass.Metric[uint64]{"count": {Name: "Count", Value: 5}},
+				counterStorage: &map[string]dataclass.Metric[int64]{"count": {Name: "Count", Value: 5}},
 				gaugeStorage:   &map[string]dataclass.Metric[float64]{"test1": {Name: "TEst1", Value: 1}, "test2": {Name: "test2", Value: 2}}},
 			args: args{typeName: "gauge", metricName: "Fake_Count"},
 			want: want{
@@ -92,31 +92,31 @@ func TestMetricHandler_GetValue(t *testing.T) {
 		{
 			name: "get gouge by name",
 			fields: fields{
-				counterStorage: &map[string]dataclass.Metric[uint64]{"count": {Name: "Count", Value: 5}},
+				counterStorage: &map[string]dataclass.Metric[int64]{"count": {Name: "Count", Value: 5}},
 				gaugeStorage:   &map[string]dataclass.Metric[float64]{"test1": {Name: "TEst1", Value: 1}, "test2": {Name: "test2", Value: 2}}},
 			args: args{typeName: "gauge", metricName: "test1"},
 			want: want{
 				code:        200,
-				response:    "1.00",
+				response:    "1.000",
 				contentType: "",
 			},
 		},
 		{
 			name: "get gouge by upercase name",
 			fields: fields{
-				counterStorage: &map[string]dataclass.Metric[uint64]{"count": {Name: "Count", Value: 5}},
+				counterStorage: &map[string]dataclass.Metric[int64]{"count": {Name: "Count", Value: 5}},
 				gaugeStorage:   &map[string]dataclass.Metric[float64]{"test1": {Name: "TEst1", Value: 1}, "test2": {Name: "test2", Value: 2}}},
 			args: args{typeName: "gauge", metricName: "Test1"},
 			want: want{
 				code:        200,
-				response:    "1.00",
+				response:    "1.000",
 				contentType: "",
 			},
 		},
 		{
 			name: "get counter by upercase name",
 			fields: fields{
-				counterStorage: &map[string]dataclass.Metric[uint64]{"count": {Name: "Count", Value: 5}},
+				counterStorage: &map[string]dataclass.Metric[int64]{"count": {Name: "Count", Value: 5}},
 				gaugeStorage:   &map[string]dataclass.Metric[float64]{"test1": {Name: "TEst1", Value: 1}, "test2": {Name: "test2", Value: 2}}},
 			args: args{typeName: "counter", metricName: "COUNT"},
 			want: want{
@@ -137,7 +137,7 @@ func TestMetricHandler_GetValue(t *testing.T) {
 			request = request.WithContext(context.WithValue(request.Context(), chi.RouteCtxKey, rctx))
 
 			w := httptest.NewRecorder()
-			cr := metricrepository.NewMetricRepository[uint64]()
+			cr := metricrepository.NewMetricRepository[int64]()
 			cr.Datastorage = tt.fields.counterStorage
 			gr := metricrepository.NewMetricRepository[float64]()
 			gr.Datastorage = tt.fields.gaugeStorage

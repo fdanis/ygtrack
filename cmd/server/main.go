@@ -24,7 +24,7 @@ func main() {
 	app.UseTemplateCache = true
 
 	render.NewTemplates(&app)
-	cr := metricrepository.NewMetricRepository[uint64]()
+	cr := metricrepository.NewMetricRepository[int64]()
 	gr := metricrepository.NewMetricRepository[float64]()
 	metricHandler := handler.MetricHandler{CounterRepo: &cr, GaugeRepo: &gr}
 	r := chi.NewRouter()

@@ -15,8 +15,8 @@ type MemStatService[T any] struct {
 	curent       T
 	metrics      []string
 	reflectValue map[string]reflect.Value
-	pollCount    uint64
-	randomCount  uint64
+	pollCount    int64
+	randomCount  int64
 	r            *rand.Rand
 	httpHelper   helpers.HTTPHelper
 	updatefunc   func(obj *T)
@@ -59,7 +59,7 @@ func (m *MemStatService[T]) Update() {
 	defer m.lock.Unlock()
 	m.updatefunc(&m.curent)
 	m.pollCount++
-	m.randomCount = m.r.Uint64()
+	m.randomCount = m.r.Int63()
 
 }
 

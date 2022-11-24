@@ -49,7 +49,7 @@ func TestMemStatService_New(t *testing.T) {
 		name     string
 		values   mockMemStat
 		want     mockMemStat
-		wantPool uint64
+		wantPool int64
 	}{
 		{
 			name:     "check initialization",
@@ -60,7 +60,7 @@ func TestMemStatService_New(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			res := NewMemStatService[mockMemStat]([]string{"Float", "IncorectParam"}, nil, mockReadStat)
+			res := NewMemStatService([]string{"Float", "IncorectParam"}, nil, mockReadStat)
 			assert.Equal(t, res.curent.UInt64, tt.want.UInt64, "uint property was not sent")
 			assert.Equal(t, res.curent.Float, tt.want.Float, "uint property was not sent")
 			assert.Equal(t, res.curent.UInt32, tt.want.UInt32, "uint property was not sent")
@@ -76,7 +76,7 @@ func TestMemStatService_Update(t *testing.T) {
 		name     string
 		values   mockMemStat
 		want     mockMemStat
-		wantPool uint64
+		wantPool int64
 	}{
 		{
 			name:     "check send",
@@ -87,7 +87,7 @@ func TestMemStatService_Update(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			res := NewMemStatService[mockMemStat]([]string{"First"}, nil, mockReadStat)
+			res := NewMemStatService([]string{"First"}, nil, mockReadStat)
 			res.Update()
 			assert.Equal(t, res.curent.UInt64, tt.want.UInt64, "uint property not valid")
 			assert.Equal(t, res.curent.Float, tt.want.Float, "uint property  not valid")

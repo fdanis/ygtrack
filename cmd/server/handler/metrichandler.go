@@ -15,7 +15,7 @@ import (
 )
 
 type MetricHandler struct {
-	CounterRepo repository.MetricRepository[uint64]
+	CounterRepo repository.MetricRepository[int64]
 	GaugeRepo   repository.MetricRepository[float64]
 }
 
@@ -33,12 +33,12 @@ func (h *MetricHandler) Update(w http.ResponseWriter, r *http.Request) {
 		}
 		h.GaugeRepo.Add(dataclass.Metric[float64]{Name: nameMetric, Value: val})
 	case "counter":
-		val, err := strconv.ParseUint(valueMetric, 10, 64)
+		val, err := strconv.ParseInt(valueMetric, 10, 64)
 		if err != nil {
 			http.Error(w, "Incorrect value", http.StatusBadRequest)
 			return
 		}
-		h.CounterRepo.Add(dataclass.Metric[uint64]{Name: nameMetric, Value: val})
+		h.CounterRepo.Add(dataclass.Metric[int64]{Name: nameMetric, Value: val})
 	default:
 		http.Error(w, "Incorrect type", http.StatusNotImplemented)
 		return
