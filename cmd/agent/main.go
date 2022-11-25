@@ -25,12 +25,18 @@ func main() {
 
 	ctxupdate, cancelu := context.WithCancel(context.Background())
 	ctxsend, cancels := context.WithCancel(context.Background())
+	ctxend, cancele := context.WithCancel(context.Background())
 	go Update(ctxupdate, pollInterval, m)
 	go Send(ctxsend, reportInterval, m)
+	go Exit(cancele)
 
-	bufio.NewReader(os.Stdin).ReadBytes('q')
+	<-ctxend.Done()
 	cancelu()
 	cancels()
+}
+func Exit(cancel context.CancelFunc) {
+	bufio.NewReader(os.Stdin).ReadBytes('q')
+	cancel()
 }
 
 func Update(ctx context.Context, poolInterval int, service *memstatservice.SimpleMemStatService) {
