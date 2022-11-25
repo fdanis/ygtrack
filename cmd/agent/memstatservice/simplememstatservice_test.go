@@ -9,6 +9,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const (
+	fakeurl = "fake"
+)
+
 func mockRuntimeReadStat(stat *runtime.MemStats) {
 	//stat.WasCount++
 	stat.Alloc = 1234

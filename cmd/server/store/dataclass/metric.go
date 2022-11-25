@@ -1,6 +1,8 @@
 package dataclass
 
-type Metric[T any] struct {
+import "github.com/fdanis/ygtrack/internal/constraints"
+
+type Metric[T constraints.Number] struct {
 	Name  string
 	Value T
 }

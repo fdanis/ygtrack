@@ -1,6 +1,10 @@
 package main
 
 import (
+	"bufio"
+	"context"
+	"fmt"
+	"os"
 	"runtime"
 	"time"
 
@@ -49,19 +53,51 @@ var (
 
 func main() {
 	hhelper := httphelper.Helper{}
-	//hhelper := fakehttphelper.Helper{}
 	m := memstatservice.NewSimpleMemStatService(hhelper, runtime.ReadMemStats)
 
-	now := time.Now()
-	t := time.NewTicker(1 * time.Second)
+	ctxupdate, cancelu := context.WithCancel(context.Background())
+	ctxsend, cancels := context.WithCancel(context.Background())
+	go Update(ctxupdate, 2, m)
+	go Send(ctxsend, 10, m)
+
+	bufio.NewReader(os.Stdin).ReadBytes('\n')
+	cancelu()
+	cancels()
+}
+
+func Update(ctx context.Context, poolInterval int, service *memstatservice.SimpleMemStatService) {
+	t := time.NewTicker(time.Duration(poolInterval) * time.Second)
 	for {
-		<-t.C
-		dur := time.Until(now)
-		if int(dur.Seconds())%pollInterval == 0 {
-			go m.Update()
+		select {
+		case <-t.C:
+			service.Update()
+		case <-ctx.Done():
+			{
+				//why I can't see this line in console?
+				fmt.Println("ticker stoped")
+				t.Stop()
+				return
+			}
 		}
-		if int(dur.Seconds())%reportInterval == 0 {
-			go m.Send(serverURL)
-		}
+
 	}
+
+}
+func Send(ctx context.Context, sendInterval int, service *memstatservice.SimpleMemStatService) {
+	t := time.NewTicker(time.Duration(sendInterval) * time.Second)
+	for {
+		select {
+		case <-t.C:
+			service.Send(serverURL)
+		case <-ctx.Done():
+			{
+				//why I can't see this line in console?
+				fmt.Println("send ticker stoped")
+				t.Stop()
+				return
+			}
+		}
+
+	}
+
 }

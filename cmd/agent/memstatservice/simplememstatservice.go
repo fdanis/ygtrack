@@ -1,9 +1,10 @@
 package memstatservice
 
 import (
+	"crypto/rand"
 	"fmt"
 	"log"
-	"math/rand"
+	"math/big"
 	"runtime"
 	"sync"
 	"time"
@@ -11,11 +12,17 @@ import (
 	"github.com/fdanis/ygtrack/internal/helpers"
 )
 
+const (
+	gauge       = "gauge"
+	counter     = "counter"
+	pollCount   = "PollCount"
+	randomCount = "RandomCount"
+)
+
 type SimpleMemStatService struct {
 	gaugeDictionary map[string]float64
 	pollCount       int64
 	randomCount     int64
-	r               *rand.Rand
 	httpHelper      helpers.HTTPHelper
 	updatefunc      func(obj *runtime.MemStats)
 	lock            sync.RWMutex
@@ -23,8 +30,6 @@ type SimpleMemStatService struct {
 
 func NewSimpleMemStatService(hhelp helpers.HTTPHelper, statupdate func(obj *runtime.MemStats)) *SimpleMemStatService {
 	m := new(SimpleMemStatService)
-	source := rand.NewSource(time.Now().UnixNano())
-	m.r = rand.New(source)
 	m.updatefunc = statupdate
 	m.httpHelper = hhelp
 	m.gaugeDictionary = map[string]float64{}
@@ -65,7 +70,12 @@ func (m *SimpleMemStatService) Update() {
 	m.gaugeDictionary["TotalAlloc"] = float64(memstat.TotalAlloc)
 
 	m.pollCount++
-	m.randomCount = m.r.Int63()
+	maxint := int64(^uint(0) >> 1)
+	randomValue, err := rand.Int(rand.Reader, big.NewInt(maxint))
+	if err != nil {
+		panic(err)
+	}
+	m.randomCount = randomValue.Int64()
 }
 
 func (m *SimpleMemStatService) Send(url string) {

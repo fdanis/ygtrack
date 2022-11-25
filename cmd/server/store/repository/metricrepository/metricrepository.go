@@ -5,13 +5,14 @@ import (
 	"strings"
 
 	"github.com/fdanis/ygtrack/cmd/server/store/dataclass"
+	"github.com/fdanis/ygtrack/internal/constraints"
 )
 
-type MetricRepository[T any] struct {
+type MetricRepository[T constraints.Number] struct {
 	Datastorage *map[string]dataclass.Metric[T]
 }
 
-func NewMetricRepository[T any]() MetricRepository[T] {
+func NewMetricRepository[T constraints.Number]() MetricRepository[T] {
 	return MetricRepository[T]{Datastorage: &map[string]dataclass.Metric[T]{}}
 }
 
