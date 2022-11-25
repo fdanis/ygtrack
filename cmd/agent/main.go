@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"github.com/fdanis/ygtrack/cmd/agent/memstatservice"
-	//"github.com/fdanis/ygtrack/internal/helpers/httphelper"
-	"github.com/fdanis/ygtrack/internal/helpers/fakehttphelper"
+	"github.com/fdanis/ygtrack/internal/helpers/httphelper"
+	//"github.com/fdanis/ygtrack/internal/helpers/fakehttphelper"
 )
 
 const (
@@ -48,8 +48,8 @@ var (
 )
 
 func main() {
-	//hhelper := httphelper.Helper{}
-	hhelper := fakehttphelper.Helper{}
+	hhelper := httphelper.Helper{}
+	//hhelper := fakehttphelper.Helper{}
 	m := memstatservice.NewSimpleMemStatService(hhelper, runtime.ReadMemStats)
 
 	now := time.Now()
