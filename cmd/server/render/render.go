@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"path/filepath"
+	"runtime"
 
 	"github.com/fdanis/ygtrack/cmd/server/config"
 	"github.com/fdanis/ygtrack/cmd/server/models"
@@ -36,9 +37,14 @@ func Render(w http.ResponseWriter, templateName string, data *models.TemplateDat
 	_ = t.Execute(w, data)
 }
 
+var (
+	_, b, _, _ = runtime.Caller(0)
+	basepath   = filepath.Dir(b)
+)
+
 func CreateTemplateCache() (map[string]*template.Template, error) {
 	result := map[string]*template.Template{}
-	tmps, err := filepath.Glob("./cmd/server/templates/*.html")
+	tmps, err := filepath.Glob(basepath + "/../templates/*.html")
 	if err != nil {
 		return result, err
 	}

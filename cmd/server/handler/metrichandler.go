@@ -38,6 +38,14 @@ func (h *MetricHandler) Update(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Incorrect value", http.StatusBadRequest)
 			return
 		}
+		oldValue, err := h.CounterRepo.GetByName(nameMetric)
+		if err != nil {
+			http.Error(w, "Incorrect value", http.StatusInternalServerError)
+			return
+		}
+		if oldValue != nil {
+			val += oldValue.Value
+		}
 		h.CounterRepo.Add(dataclass.Metric[int64]{Name: nameMetric, Value: val})
 	default:
 		http.Error(w, "Incorrect type", http.StatusNotImplemented)
