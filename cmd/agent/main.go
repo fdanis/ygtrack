@@ -19,46 +19,14 @@ const (
 	serverURL      string = "http://localhost:8080/update"
 )
 
-var (
-	gaugeList = [...]string{
-		"Alloc",
-		"BuckHashSys",
-		"Frees",
-		"GCCPUFraction",
-		"GCSys",
-		"HeapAlloc",
-		"HeapIdle",
-		"HeapInuse",
-		"HeapObjects",
-		"HeapReleased",
-		"HeapSys",
-		"LastGC",
-		"Lookups",
-		"MCacheInuse",
-		"MCacheSys",
-		"MSpanInuse",
-		"MSpanSys",
-		"Mallocs",
-		"NextGC",
-		"NumForcedGC",
-		"NumGC",
-		"OtherSys",
-		"PauseTotalNs",
-		"StackInuse",
-		"StackSys",
-		"Sys",
-		"TotalAlloc",
-	}
-)
-
 func main() {
 	hhelper := httphelper.Helper{}
 	m := memstatservice.NewSimpleMemStatService(hhelper, runtime.ReadMemStats)
 
 	ctxupdate, cancelu := context.WithCancel(context.Background())
 	ctxsend, cancels := context.WithCancel(context.Background())
-	go Update(ctxupdate, 2, m)
-	go Send(ctxsend, 10, m)
+	go Update(ctxupdate, pollInterval, m)
+	go Send(ctxsend, reportInterval, m)
 
 	bufio.NewReader(os.Stdin).ReadBytes('q')
 	cancelu()
