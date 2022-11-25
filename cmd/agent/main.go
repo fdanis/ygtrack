@@ -60,7 +60,7 @@ func main() {
 	go Update(ctxupdate, 2, m)
 	go Send(ctxsend, 10, m)
 
-	bufio.NewReader(os.Stdin).ReadBytes('\n')
+	bufio.NewReader(os.Stdin).ReadBytes('q')
 	cancelu()
 	cancels()
 }
