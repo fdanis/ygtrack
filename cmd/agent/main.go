@@ -28,8 +28,8 @@ func main() {
 	ctxend, cancele := context.WithCancel(context.Background())
 	go Update(ctxupdate, pollInterval, m)
 	go Send(ctxsend, reportInterval, m)
-	go Exit(cancele)
 
+	go Exit(cancele)
 	<-ctxend.Done()
 	cancelu()
 	cancels()
