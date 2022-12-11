@@ -29,7 +29,8 @@ func main() {
 	go Send(ctxsend, reportInterval, m)
 
 	for {
-
+		time.Sleep(time.Minute * 1)
+		break
 	}
 	// go Exit(cancele)
 	// <-ctxend.Done()
