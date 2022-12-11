@@ -33,16 +33,16 @@ func (h *simpleMockHTTPHelper) Get(url string) error {
 func (h *simpleMockHTTPHelper) Post(url string, contentType string, data *bytes.Buffer) error {
 	m := models.Metrics{}
 	json.Unmarshal(data.Bytes(), &m)
-	formatedUrl := ""
+	formatedURL := ""
 	if m.MType == gauge {
-		formatedUrl = fmt.Sprintf("%s/%s/", url, m.MType)
+		formatedURL = fmt.Sprintf("%s/%s/", url, m.MType)
 	} else {
 
-		formatedUrl = fmt.Sprintf("%s/%s/%s/%d", url, m.MType, m.ID, *m.Delta)
+		formatedURL = fmt.Sprintf("%s/%s/%s/%d", url, m.MType, m.ID, *m.Delta)
 	}
-	println(formatedUrl)
+	println(formatedURL)
 	for k := range h.paths {
-		if strings.Contains(formatedUrl, k) {
+		if strings.Contains(formatedURL, k) {
 			h.paths[k]++
 		}
 	}

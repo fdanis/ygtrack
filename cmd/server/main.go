@@ -32,6 +32,7 @@ func main() {
 	r.Post("/update/", metricHandler.UpdateJSON)
 	r.Post("/update", metricHandler.UpdateJSON)
 	r.Post("/value/", metricHandler.GetJSONValue)
+	r.Post("/value", metricHandler.GetJSONValue)
 	r.Get("/value/{type}/{name}", metricHandler.GetValue)
 	r.Get("/", metricHandler.Get)
 

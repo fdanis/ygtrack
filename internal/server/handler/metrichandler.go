@@ -117,6 +117,7 @@ func (h *MetricHandler) GetValue(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *MetricHandler) GetJSONValue(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
 	var model models.Metrics
 	if err := decodeJSONBody(w, r, &model); err != nil {
 		var mr *malformedRequest
@@ -151,10 +152,6 @@ func (h *MetricHandler) GetJSONValue(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		model.Delta = &met.Value
-
-	default:
-		w.WriteHeader(http.StatusNotImplemented)
-		return
 	}
 
 	responseJSON(w, model)
@@ -192,7 +189,7 @@ func (mr *malformedRequest) Error() string {
 }
 
 func responseJSON(w http.ResponseWriter, src interface{}) {
-	w.Header().Set("Content-Type", "application/json")
+
 	buf := bytes.NewBuffer([]byte{})
 	encoder := json.NewEncoder(buf)
 	encoder.SetEscapeHTML(false)
@@ -225,7 +222,7 @@ func decodeJSONBody(w http.ResponseWriter, r *http.Request, dst interface{}) err
 			return &malformedRequest{status: http.StatusBadRequest, msg: msg}
 
 		case errors.Is(err, io.ErrUnexpectedEOF):
-			msg := fmt.Sprintf("Request body contains badly-formed JSON")
+			msg := "Request body contains badly-formed JSON"
 			return &malformedRequest{status: http.StatusBadRequest, msg: msg}
 
 		case errors.As(err, &unmarshalTypeError):
