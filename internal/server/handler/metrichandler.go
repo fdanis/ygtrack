@@ -75,12 +75,18 @@ func (h *MetricHandler) UpdateJSON(w http.ResponseWriter, r *http.Request) {
 		if model.Delta == nil {
 			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		}
-		h.CounterRepo.Add(dataclass.Metric[int64]{Name: model.ID, Value: *model.Delta})
-		d, err := h.CounterRepo.GetByName(model.ID)
+
+		oldValue, err := h.CounterRepo.GetByName(model.ID)
 		if err != nil {
-			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			http.Error(w, "Incorrect value", http.StatusInternalServerError)
+			return
 		}
-		model.Delta = &d.Value
+		if oldValue != nil {
+			newVal := *model.Delta + oldValue.Value
+			model.Delta = &newVal
+		}
+		h.CounterRepo.Add(dataclass.Metric[int64]{Name: model.ID, Value: *model.Delta})
+
 	case "gauge":
 		if model.Value == nil {
 			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)

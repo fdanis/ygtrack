@@ -474,7 +474,7 @@ func TestMetricHandler_GetValueJSON(t *testing.T) {
 			},
 			args: args{typeName: "counter", metricName: "Fake_Count"},
 			want: want{
-				code:        200,
+				code:        404,
 				response:    "",
 				contentType: "application/json",
 			},
@@ -486,7 +486,7 @@ func TestMetricHandler_GetValueJSON(t *testing.T) {
 				gaugeStorage:   &map[string]dataclass.Metric[float64]{"test1": {Name: "TEst1", Value: 1}, "test2": {Name: "test2", Value: 2}}},
 			args: args{typeName: "gauge", metricName: "Fake_Count"},
 			want: want{
-				code:        200,
+				code:        404,
 				response:    "",
 				contentType: "application/json",
 			},
