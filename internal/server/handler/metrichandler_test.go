@@ -9,10 +9,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/fdanis/ygtrack/cmd/server/config"
-	"github.com/fdanis/ygtrack/cmd/server/render"
-	"github.com/fdanis/ygtrack/cmd/server/store/dataclass"
-	"github.com/fdanis/ygtrack/cmd/server/store/repository/metricrepository"
+	"github.com/fdanis/ygtrack/internal/server/config"
+	"github.com/fdanis/ygtrack/internal/server/render"
+	"github.com/fdanis/ygtrack/internal/server/store/dataclass"
+	"github.com/fdanis/ygtrack/internal/server/store/repository/metricrepository"
 	"github.com/go-chi/chi"
 	"github.com/stretchr/testify/assert"
 )

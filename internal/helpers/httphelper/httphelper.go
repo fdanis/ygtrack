@@ -1,6 +1,7 @@
 package httphelper
 
 import (
+	"bytes"
 	"fmt"
 	"net/http"
 )
@@ -20,8 +21,8 @@ func (h Helper) Get(url string) error {
 	return nil
 }
 
-func (h Helper) Post(url string) error {
-	res, err := http.Post(url, "text/plain", nil)
+func (h Helper) Post(url string, contentType string, data *bytes.Buffer) error {
+	res, err := http.Post(url, contentType, data)
 	if err != nil {
 		return err
 	}

@@ -1,6 +1,9 @@
 package fakehttphelper
 
-import "fmt"
+import (
+	"bytes"
+	"fmt"
+)
 
 type Helper struct {
 }
@@ -10,7 +13,7 @@ func (h Helper) Get(url string) error {
 	return nil
 }
 
-func (h Helper) Post(url string) error {
+func (h Helper) Post(url string, contentType string, data *bytes.Buffer) error {
 	fmt.Println(url)
 	return nil
 }

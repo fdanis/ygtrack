@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"runtime"
 	"time"
 
 	"github.com/fdanis/ygtrack/cmd/agent/memstatservice"
@@ -21,7 +20,7 @@ const (
 
 func main() {
 	hhelper := httphelper.Helper{}
-	m := memstatservice.NewSimpleMemStatService(hhelper, runtime.ReadMemStats)
+	m := memstatservice.NewSimpleMemStatService(hhelper)
 
 	ctxupdate, cancelu := context.WithCancel(context.Background())
 	ctxsend, cancels := context.WithCancel(context.Background())

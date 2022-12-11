@@ -4,10 +4,10 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/fdanis/ygtrack/cmd/server/config"
-	"github.com/fdanis/ygtrack/cmd/server/handler"
-	"github.com/fdanis/ygtrack/cmd/server/render"
-	"github.com/fdanis/ygtrack/cmd/server/store/repository/metricrepository"
+	"github.com/fdanis/ygtrack/internal/server/config"
+	"github.com/fdanis/ygtrack/internal/server/handler"
+	"github.com/fdanis/ygtrack/internal/server/render"
+	"github.com/fdanis/ygtrack/internal/server/store/repository/metricrepository"
 	"github.com/go-chi/chi"
 )
 
@@ -29,6 +29,9 @@ func main() {
 	metricHandler := handler.MetricHandler{CounterRepo: &cr, GaugeRepo: &gr}
 	r := chi.NewRouter()
 	r.Post("/update/{type}/{name}/{value}", metricHandler.Update)
+	r.Post("/update/", metricHandler.UpdateJSON)
+	r.Post("/update", metricHandler.UpdateJSON)
+	r.Post("/value/", metricHandler.GetJSONValue)
 	r.Get("/value/{type}/{name}", metricHandler.GetValue)
 	r.Get("/", metricHandler.Get)
 
