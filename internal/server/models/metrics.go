@@ -16,8 +16,8 @@ func (m *Metrics) UnmarshalJSON(data []byte) error {
 
 	aliasValue := &struct {
 		*MetricsAlias
-		Delta json.RawMessage `json:"delta"`
-		Value json.RawMessage `json:"value"`
+		Delta json.RawMessage `json:"delta,omitempty"`
+		Value json.RawMessage `json:"value,omitempty"`
 	}{
 		MetricsAlias: (*MetricsAlias)(m),
 	}
@@ -28,16 +28,20 @@ func (m *Metrics) UnmarshalJSON(data []byte) error {
 	switch m.MType {
 	case "gauge":
 		var value float64
-		if err := json.Unmarshal(aliasValue.Value, &value); err != nil {
-			return err
+		if aliasValue.Value != nil {
+			if err := json.Unmarshal(aliasValue.Value, &value); err != nil {
+				return err
+			}
+			m.Value = &value
 		}
-		m.Value = &value
 	case "counter":
 		var delta int64
-		if err := json.Unmarshal(aliasValue.Delta, &delta); err != nil {
-			return err
+		if aliasValue.Delta != nil {
+			if err := json.Unmarshal(aliasValue.Delta, &delta); err != nil {
+				return err
+			}
+			m.Delta = &delta
 		}
-		m.Delta = &delta
 	}
 	return nil
 }
