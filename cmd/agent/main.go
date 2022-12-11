@@ -29,7 +29,7 @@ func main() {
 	go Send(ctxsend, reportInterval, m)
 
 	for {
-		time.Sleep(time.Minute * 1)
+		time.Sleep(time.Minute * 5)
 		break
 	}
 	// go Exit(cancele)
