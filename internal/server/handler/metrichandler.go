@@ -73,12 +73,17 @@ func (h *MetricHandler) UpdateJSON(w http.ResponseWriter, r *http.Request) {
 	switch model.MType {
 	case "counter":
 		if model.Delta == nil {
-			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusBadRequest)
+			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		}
 		h.CounterRepo.Add(dataclass.Metric[int64]{Name: model.ID, Value: *model.Delta})
+		d, err := h.CounterRepo.GetByName(model.ID)
+		if err != nil {
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		}
+		model.Delta = &d.Value
 	case "gauge":
 		if model.Value == nil {
-			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusBadRequest)
+			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		}
 		h.GaugeRepo.Add(dataclass.Metric[float64]{Name: model.ID, Value: *model.Value})
 	}
