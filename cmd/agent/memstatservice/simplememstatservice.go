@@ -19,7 +19,7 @@ const (
 	gauge       = "gauge"
 	counter     = "counter"
 	pollCount   = "PollCount"
-	randomCount = "RandomCount"
+	randomCount = "RandomValue"
 )
 
 type SimpleMemStatService struct {
@@ -105,7 +105,7 @@ func (m *SimpleMemStatService) httpSendStat(data *models.Metrics, url string) {
 
 	if err != nil {
 		log.Printf("could marshal %v", err)
-	}	
+	}
 	err = m.httpHelper.Post(url, "application/json", bytes.NewBuffer(d))
 	if err != nil {
 		log.Printf("could not send metric %v %v", data, err)
