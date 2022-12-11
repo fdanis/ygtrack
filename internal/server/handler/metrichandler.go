@@ -148,18 +148,22 @@ func (h *MetricHandler) GetJSONValue(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			log.Print(err)
 		}
-		if met != nil {
-			model.Value = &met.Value
+		if met == nil {
+			w.WriteHeader(http.StatusNotFound)
+			return
 		}
+		model.Value = &met.Value
 
 	case "counter":
 		met, err := h.CounterRepo.GetByName(model.ID)
 		if err != nil {
 			log.Print(err)
 		}
-		if met != nil {
-			model.Delta = &met.Value
+		if met == nil {
+			w.WriteHeader(http.StatusNotFound)
+			return
 		}
+		model.Delta = &met.Value
 	default:
 		w.WriteHeader(http.StatusNotImplemented)
 		return
