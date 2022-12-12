@@ -33,7 +33,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("%v", config)
+
 	hhelper := httphelper.Helper{}
 	m := memstatservice.NewSimpleMemStatService(hhelper)
 
@@ -44,8 +44,9 @@ func main() {
 	go Update(ctxupdate, config.PollInterval, m)
 	go Send(ctxsend, config.ReportInterval, os.Getenv("ADDRESS"), m)
 	for {
-		time.Sleep(time.Duration(2) * time.Minute)
-		break
+		if false {
+			break
+		}
 	}
 }
 func Exit(cancel context.CancelFunc) {
@@ -57,6 +58,7 @@ func Update(ctx context.Context, poolInterval int, service *memstatservice.Simpl
 	if poolInterval <= 0 {
 		poolInterval = PollInterval
 	}
+
 	t := time.NewTicker(time.Duration(poolInterval) * time.Second)
 	for {
 		select {
