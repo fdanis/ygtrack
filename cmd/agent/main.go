@@ -36,19 +36,18 @@ func main() {
 	fmt.Printf("%v", config)
 	hhelper := httphelper.Helper{}
 	m := memstatservice.NewSimpleMemStatService(hhelper)
-	ctxupdate, cancelu := context.WithCancel(context.Background())
-	ctxsend, cancels := context.WithCancel(context.Background())
-	//	ctxend, cancele := context.WithCancel(context.Background())
-	go Update(ctxupdate, config.PollInterval, m)
-	go Send(ctxsend, config.ReportInterval, m)
+	var timeTillContextDeadline = time.Now().Add(3 * time.Second)
 
-	time.Sleep(time.Second * 35)
+	ctxupdate, cancelu := context.WithDeadline(context.Background(), timeTillContextDeadline)
+	ctxsend, cancels := context.WithDeadline(context.Background(), timeTillContextDeadline)
 	defer cancelu()
 	defer cancels()
+	go Update(ctxupdate, config.PollInterval, m)
+	go Send(ctxsend, config.ReportInterval, os.Getenv("ADDRESS"), m)
 
-	// go Exit(cancele)
-	// <-ctxend.Done()
-
+	for {
+		time.Sleep(time.Duration(19) * time.Second)
+	}
 }
 func Exit(cancel context.CancelFunc) {
 	bufio.NewReader(os.Stdin).ReadBytes('q')
@@ -74,11 +73,11 @@ func Update(ctx context.Context, poolInterval int, service *memstatservice.Simpl
 		}
 	}
 }
-func Send(ctx context.Context, sendInterval int, service *memstatservice.SimpleMemStatService) {
+func Send(ctx context.Context, sendInterval int, host string, service *memstatservice.SimpleMemStatService) {
 	if sendInterval <= 0 {
 		sendInterval = ReportInterval
 	}
-	host := os.Getenv("ADDRESS")
+
 	if host == "" {
 		host = ServerURL
 	}
