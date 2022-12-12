@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"context"
-	"fmt"
 	"log"
 	"os"
 	"strings"
@@ -37,44 +36,38 @@ func main() {
 	hhelper := httphelper.Helper{}
 	m := memstatservice.NewSimpleMemStatService(hhelper)
 
-	ctxupdate, cancelu := context.WithCancel(context.Background())
-	ctxsend, cancels := context.WithCancel(context.Background())
-	defer cancelu()
-	defer cancels()
-	go Update(ctxupdate, config.PollInterval, m)
-	go Send(ctxsend, config.ReportInterval, os.Getenv("ADDRESS"), m)
+	//ctxupdate, cancelu := context.WithCancel(context.Background())
+	//ctxsend, cancels := context.WithCancel(context.Background())
+	go Update(config.PollInterval, m)
+	go Send(config.ReportInterval, os.Getenv("ADDRESS"), m)
 	for {
 		if false {
 			break
 		}
 	}
+	//defer cancelu()
+	//defer cancels()
 }
 func Exit(cancel context.CancelFunc) {
 	bufio.NewReader(os.Stdin).ReadBytes('q')
 	cancel()
 }
 
-func Update(ctx context.Context, poolInterval int, service *memstatservice.SimpleMemStatService) {
+func Update(poolInterval int, service *memstatservice.SimpleMemStatService) {
 	if poolInterval <= 0 {
 		poolInterval = PollInterval
 	}
 
 	t := time.NewTicker(time.Duration(poolInterval) * time.Second)
+	
 	for {
 		select {
 		case <-t.C:
 			service.Update()
-		case <-ctx.Done():
-			{
-				//why I can't see this line in console?
-				fmt.Println("ticker stoped")
-				t.Stop()
-				return
-			}
 		}
 	}
 }
-func Send(ctx context.Context, sendInterval int, host string, service *memstatservice.SimpleMemStatService) {
+func Send(sendInterval int, host string, service *memstatservice.SimpleMemStatService) {
 	if sendInterval <= 0 {
 		sendInterval = ReportInterval
 	}
@@ -87,13 +80,6 @@ func Send(ctx context.Context, sendInterval int, host string, service *memstatse
 		select {
 		case <-t.C:
 			service.Send("http://" + strings.TrimRight(host, "/") + "/update")
-		case <-ctx.Done():
-			{
-				//why I can't see this line in console?
-				fmt.Println("send ticker stoped")
-				t.Stop()
-				return
-			}
 		}
 	}
 }
