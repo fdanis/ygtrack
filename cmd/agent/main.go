@@ -18,7 +18,7 @@ import (
 const (
 	PollInterval   int    = 2
 	ReportInterval int    = 10
-	ServerURL      string = "localhost:8080"
+	ServerURL      string = "127.0.0.1:8080"
 )
 
 type conf struct {
