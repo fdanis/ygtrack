@@ -37,7 +37,8 @@ func main() {
 	r.Get("/value/{type}/{name}", metricHandler.GetValue)
 	r.Get("/", metricHandler.Get)
 
-	address := os.Getenv("ADDRESS ")
+	address := os.Getenv("ADDRESS")
+
 	if address == "" {
 		address = ":8080"
 	}
