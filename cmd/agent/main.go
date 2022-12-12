@@ -45,6 +45,8 @@ func main() {
 	defer cancelu()
 	defer cancels()
 	for {
+		time.Sleep(time.Minute * 2)
+
 	}
 	// go Exit(cancele)
 	// <-ctxend.Done()
