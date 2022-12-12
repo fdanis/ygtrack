@@ -45,9 +45,7 @@ func main() {
 	go Update(ctxupdate, config.PollInterval, m)
 	go Send(ctxsend, config.ReportInterval, os.Getenv("ADDRESS"), m)
 
-	for {
-	
-	}
+	time.Sleep(time.Duration(2) * time.Minute)
 }
 func Exit(cancel context.CancelFunc) {
 	bufio.NewReader(os.Stdin).ReadBytes('q')

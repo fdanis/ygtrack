@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/fdanis/ygtrack/internal/server/models"
+	"github.com/fdanis/ygtrack/internal/server/render"
 	"github.com/fdanis/ygtrack/internal/server/store/dataclass"
 	"github.com/fdanis/ygtrack/internal/server/store/repository"
 	"github.com/go-chi/chi"
@@ -195,7 +196,7 @@ func (h *MetricHandler) Get(w http.ResponseWriter, r *http.Request) {
 	for _, v := range counterList {
 		result[v.Name] = fmt.Sprintf("%d", v.Value)
 	}
-	//render.Render(w, "home.html", &models.TemplateDate{Data: map[string]any{"metrics": result}})
+	render.Render(w, "home.html", &models.TemplateDate{Data: map[string]any{"metrics": result}})
 	w.WriteHeader(http.StatusOK)
 }
 

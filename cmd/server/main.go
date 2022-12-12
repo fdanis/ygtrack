@@ -1,15 +1,14 @@
 package main
 
 import (
-	"fmt"
-	//	"log"
-	"net/http"
 	"os"
+	//"log"
+	"net/http"
 
 	"github.com/fdanis/ygtrack/internal/server/config"
 	"github.com/fdanis/ygtrack/internal/server/handler"
+	"github.com/fdanis/ygtrack/internal/server/render"
 
-	//	"github.com/fdanis/ygtrack/internal/server/render"
 	"github.com/fdanis/ygtrack/internal/server/store/repository/metricrepository"
 	"github.com/go-chi/chi"
 )
@@ -18,15 +17,13 @@ var app config.AppConfig
 
 func main() {
 
-	//	cachecdTemplate, err := render.CreateTemplateCache()
-	//	if err != nil {
-	//		log.Fatalln(err)
-	//	}
-
-	//	app.TemplateCache = cachecdTemplate
-	//	app.UseTemplateCache = true
-
-	//	render.NewTemplates(&app)
+	// cachecdTemplate, err := render.CreateTemplateCache()
+	// if err != nil {
+	// 	log.Fatalln(err)
+	// }
+	// app.TemplateCache = cachecdTemplate
+	app.UseTemplateCache = false
+	render.NewTemplates(&app)
 	cr := metricrepository.NewMetricRepository[int64]()
 	gr := metricrepository.NewMetricRepository[float64]()
 	metricHandler := handler.MetricHandler{CounterRepo: &cr, GaugeRepo: &gr}
@@ -43,8 +40,6 @@ func main() {
 	if address == "" {
 		address = "127.0.0.1:8080"
 	}
-	fmt.Println(address)
-
 	server := &http.Server{
 		Addr:    address,
 		Handler: r,
