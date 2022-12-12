@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/fdanis/ygtrack/internal/server/config"
 	"github.com/fdanis/ygtrack/internal/server/handler"
@@ -36,10 +37,14 @@ func main() {
 	r.Get("/value/{type}/{name}", metricHandler.GetValue)
 	r.Get("/", metricHandler.Get)
 
+	address := os.Getenv("ADDRESS ")
+	if address == "" {
+		address = ":8080"
+	}
+
 	server := &http.Server{
-		Addr:    ":8080",
+		Addr:    address,
 		Handler: r,
 	}
 	server.ListenAndServe()
-
 }
