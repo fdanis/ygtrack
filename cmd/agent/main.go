@@ -42,14 +42,15 @@ func main() {
 	go Update(ctxupdate, config.PollInterval, m)
 	go Send(ctxsend, config.ReportInterval, m)
 
+	defer cancelu()
+	defer cancels()
 	for {
 		time.Sleep(time.Minute * 10)
 		break
 	}
 	// go Exit(cancele)
 	// <-ctxend.Done()
-	cancelu()
-	cancels()
+
 }
 func Exit(cancel context.CancelFunc) {
 	bufio.NewReader(os.Stdin).ReadBytes('q')
