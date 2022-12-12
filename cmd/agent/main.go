@@ -46,7 +46,7 @@ func main() {
 	go Send(ctxsend, config.ReportInterval, os.Getenv("ADDRESS"), m)
 
 	for {
-		time.Sleep(time.Duration(19) * time.Second)
+	
 	}
 }
 func Exit(cancel context.CancelFunc) {

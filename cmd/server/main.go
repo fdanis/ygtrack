@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -16,15 +17,15 @@ var app config.AppConfig
 
 func main() {
 
-	cachecdTemplate, err := render.CreateTemplateCache()
-	if err != nil {
-		log.Fatalln(err)
-	}
+//	cachecdTemplate, err := render.CreateTemplateCache()
+//	if err != nil {
+//		log.Fatalln(err)
+//	}
 
-	app.TemplateCache = cachecdTemplate
-	app.UseTemplateCache = true
+//	app.TemplateCache = cachecdTemplate
+//	app.UseTemplateCache = true
 
-	render.NewTemplates(&app)
+//	render.NewTemplates(&app)
 	cr := metricrepository.NewMetricRepository[int64]()
 	gr := metricrepository.NewMetricRepository[float64]()
 	metricHandler := handler.MetricHandler{CounterRepo: &cr, GaugeRepo: &gr}
@@ -41,6 +42,7 @@ func main() {
 	if address == "" {
 		address = "127.0.0.1:8080"
 	}
+	fmt.Println(address)
 
 	server := &http.Server{
 		Addr:    address,
