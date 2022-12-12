@@ -45,7 +45,7 @@ func main() {
 	defer cancelu()
 	defer cancels()
 	for {
-		time.Sleep(time.Minute * 2)
+		time.Sleep(time.Second * 40)
 
 	}
 	// go Exit(cancele)
