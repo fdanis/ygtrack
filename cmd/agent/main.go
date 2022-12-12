@@ -75,10 +75,11 @@ func Update(ctx context.Context, poolInterval int, service *memstatservice.Simpl
 		}
 	}
 }
-func Send(ctx context.Context, sendInterval int, host string, service *memstatservice.SimpleMemStatService) {
+func Send(ctx context.Context, sendInterval int, service *memstatservice.SimpleMemStatService) {
 	if sendInterval <= 0 {
 		sendInterval = ReportInterval
 	}
+	host := os.Getenv("ADDRESS")
 	if host == "" {
 		host = ServerURL
 	}
