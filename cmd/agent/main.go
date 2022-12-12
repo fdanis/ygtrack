@@ -42,12 +42,10 @@ func main() {
 	go Update(ctxupdate, config.PollInterval, m)
 	go Send(ctxsend, config.ReportInterval, m)
 
+	time.Sleep(time.Second * 35)
 	defer cancelu()
 	defer cancels()
-	for {
-		time.Sleep(time.Second * 55)
 
-	}
 	// go Exit(cancele)
 	// <-ctxend.Done()
 
