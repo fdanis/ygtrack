@@ -40,7 +40,7 @@ func main() {
 	ctxsend, cancels := context.WithCancel(context.Background())
 	//	ctxend, cancele := context.WithCancel(context.Background())
 	go Update(ctxupdate, config.PollInterval, m)
-	go Send(ctxsend, config.ReportInterval, config.Address, m)
+	go Send(ctxsend, config.ReportInterval, m)
 
 	for {
 		time.Sleep(time.Minute * 10)
