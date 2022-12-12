@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/caarlos0/env/v6"
+	"github.com/caarlos0/env"
 	"github.com/fdanis/ygtrack/cmd/agent/memstatservice"
 	"github.com/fdanis/ygtrack/internal/helpers/httphelper"
 	//"github.com/fdanis/ygtrack/internal/helpers/fakehttphelper"
@@ -18,7 +18,7 @@ import (
 const (
 	PollInterval   int    = 2
 	ReportInterval int    = 10
-	ServerURL      string = "http://localhost:8080/update"
+	ServerURL      string = "localhost:8080"
 )
 
 type conf struct {

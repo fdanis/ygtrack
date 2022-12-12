@@ -40,7 +40,7 @@ func main() {
 	address := os.Getenv("ADDRESS")
 
 	if address == "" {
-		address = ":8080"
+		address = ":8010"
 	}
 
 	server := &http.Server{
