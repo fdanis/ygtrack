@@ -15,15 +15,20 @@ import (
 	//"github.com/fdanis/ygtrack/internal/helpers/fakehttphelper"
 )
 
+const (
+	PollInterval   int    = 2
+	ReportInterval int    = 10
+	ServerURL      string = "http://localhost:8080/update"
+)
+
 type conf struct {
 	Address        string `env:"ADDRESS"`
 	ReportInterval int    `env:"REPORT_INTERVAL"`
 	PollInterval   int    `env:"POLL_INTERVAL"`
 }
 
-var config = conf{Address: "localhost:8080", ReportInterval: 10, PollInterval: 2}
-
 func main() {
+	var config = conf{}
 	err := env.Parse(&config)
 	if err != nil {
 		log.Fatal(err)
@@ -34,10 +39,10 @@ func main() {
 	ctxsend, cancels := context.WithCancel(context.Background())
 	//	ctxend, cancele := context.WithCancel(context.Background())
 	go Update(ctxupdate, config.PollInterval, m)
-	go Send(ctxsend, config.ReportInterval, "http://"+strings.TrimRight(config.Address, "/")+"/update", m)
+	go Send(ctxsend, config.ReportInterval, config.Address, m)
 
 	for {
-		time.Sleep(time.Minute * 5)
+		time.Sleep(time.Minute * 10)
 		break
 	}
 	// go Exit(cancele)
@@ -51,6 +56,9 @@ func Exit(cancel context.CancelFunc) {
 }
 
 func Update(ctx context.Context, poolInterval int, service *memstatservice.SimpleMemStatService) {
+	if poolInterval <= 0 {
+		poolInterval = PollInterval
+	}
 	t := time.NewTicker(time.Duration(poolInterval) * time.Second)
 	for {
 		select {
@@ -66,12 +74,18 @@ func Update(ctx context.Context, poolInterval int, service *memstatservice.Simpl
 		}
 	}
 }
-func Send(ctx context.Context, sendInterval int, url string, service *memstatservice.SimpleMemStatService) {
+func Send(ctx context.Context, sendInterval int, host string, service *memstatservice.SimpleMemStatService) {
+	if sendInterval <= 0 {
+		sendInterval = ReportInterval
+	}
+	if host == "" {
+		host = ServerURL
+	}
 	t := time.NewTicker(time.Duration(sendInterval) * time.Second)
 	for {
 		select {
 		case <-t.C:
-			service.Send(url)
+			service.Send("http://" + strings.TrimRight(host, "/") + "/update")
 		case <-ctx.Done():
 			{
 				//why I can't see this line in console?
