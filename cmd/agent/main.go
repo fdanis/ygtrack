@@ -36,16 +36,17 @@ func main() {
 	fmt.Printf("%v", config)
 	hhelper := httphelper.Helper{}
 	m := memstatservice.NewSimpleMemStatService(hhelper)
-	var timeTillContextDeadline = time.Now().Add(3 * time.Second)
 
-	ctxupdate, cancelu := context.WithDeadline(context.Background(), timeTillContextDeadline)
-	ctxsend, cancels := context.WithDeadline(context.Background(), timeTillContextDeadline)
+	ctxupdate, cancelu := context.WithCancel(context.Background())
+	ctxsend, cancels := context.WithCancel(context.Background())
 	defer cancelu()
 	defer cancels()
 	go Update(ctxupdate, config.PollInterval, m)
 	go Send(ctxsend, config.ReportInterval, os.Getenv("ADDRESS"), m)
-
-	time.Sleep(time.Duration(2) * time.Minute)
+	for {
+		time.Sleep(time.Duration(2) * time.Minute)
+		break
+	}
 }
 func Exit(cancel context.CancelFunc) {
 	bufio.NewReader(os.Stdin).ReadBytes('q')
