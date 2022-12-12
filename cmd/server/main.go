@@ -1,7 +1,10 @@
 package main
 
 import (
+	"fmt"
+	"log"
 	"os"
+
 	//"log"
 	"net/http"
 
@@ -44,5 +47,7 @@ func main() {
 		Addr:    address,
 		Handler: r,
 	}
+	fmt.Println(address)
+	log.Println(address)
 	server.ListenAndServe()
 }
