@@ -21,7 +21,7 @@ type conf struct {
 	PollInterval   int    `env:"POLL_INTERVAL"`
 }
 
-var config = conf{Address: "http://localhost:8080", ReportInterval: 10, PollInterval: 2}
+var config = conf{Address: "localhost:8080", ReportInterval: 10, PollInterval: 2}
 
 func main() {
 	err := env.Parse(&config)
@@ -34,7 +34,7 @@ func main() {
 	ctxsend, cancels := context.WithCancel(context.Background())
 	//	ctxend, cancele := context.WithCancel(context.Background())
 	go Update(ctxupdate, config.PollInterval, m)
-	go Send(ctxsend, config.ReportInterval, strings.TrimRight(config.Address, "/")+"/update", m)
+	go Send(ctxsend, config.ReportInterval, "http://"+strings.TrimRight(config.Address, "/")+"/update", m)
 
 	for {
 		time.Sleep(time.Minute * 5)
