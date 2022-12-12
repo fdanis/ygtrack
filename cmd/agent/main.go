@@ -33,6 +33,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	fmt.Printf("%v", config)
 	hhelper := httphelper.Helper{}
 	m := memstatservice.NewSimpleMemStatService(hhelper)
 	ctxupdate, cancelu := context.WithCancel(context.Background())

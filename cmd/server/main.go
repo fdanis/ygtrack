@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -38,7 +39,7 @@ func main() {
 	r.Get("/", metricHandler.Get)
 
 	address := os.Getenv("ADDRESS")
-
+	fmt.Printf("ADDRESS is %s", address)
 	if address == "" {
 		address = ":8080"
 	}
