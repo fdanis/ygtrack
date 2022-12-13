@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"net/http"
 	"os"
 
@@ -18,9 +17,9 @@ var app config.AppConfig
 func main() {
 	//cachecdTemplate, err := render.CreateTemplateCache()
 	//if err != nil {
-//		log.Fatalln(err)
-//	}
-//	app.TemplateCache = cachecdTemplate
+	//		log.Fatalln(err)
+	//	}
+	//	app.TemplateCache = cachecdTemplate
 	app.UseTemplateCache = true
 	render.NewTemplates(&app)
 	cr := metricrepository.NewMetricRepository[int64]()
