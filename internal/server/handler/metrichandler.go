@@ -19,8 +19,12 @@ import (
 )
 
 type MetricHandler struct {
-	CounterRepo repository.MetricRepository[int64]
-	GaugeRepo   repository.MetricRepository[float64]
+	counterRepo repository.MetricRepository[int64]
+	gaugeRepo   repository.MetricRepository[float64]
+}
+
+func NewMetricHandler(counterRepo repository.MetricRepository[int64], gaugeRepo repository.MetricRepository[float64]) MetricHandler {
+	return MetricHandler{counterRepo: counterRepo, gaugeRepo: gaugeRepo}
 }
 
 func (h *MetricHandler) Update(w http.ResponseWriter, r *http.Request) {
@@ -35,22 +39,18 @@ func (h *MetricHandler) Update(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Incorrect value", http.StatusBadRequest)
 			return
 		}
-		h.GaugeRepo.Add(dataclass.Metric[float64]{Name: nameMetric, Value: val})
+		h.gaugeRepo.Add(dataclass.Metric[float64]{Name: nameMetric, Value: val})
 	case "counter":
 		val, err := strconv.ParseInt(valueMetric, 10, 64)
 		if err != nil {
 			http.Error(w, "Incorrect value", http.StatusBadRequest)
 			return
 		}
-		oldValue, err := h.CounterRepo.GetByName(nameMetric)
+		_, err = h.AddCounter(nameMetric, val)
 		if err != nil {
 			http.Error(w, "Incorrect value", http.StatusInternalServerError)
 			return
 		}
-		if oldValue != nil {
-			val += oldValue.Value
-		}
-		h.CounterRepo.Add(dataclass.Metric[int64]{Name: nameMetric, Value: val})
 	default:
 		http.Error(w, "Incorrect type", http.StatusNotImplemented)
 		return
@@ -75,25 +75,36 @@ func (h *MetricHandler) UpdateJSON(w http.ResponseWriter, r *http.Request) {
 		if model.Delta == nil {
 			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		}
-
-		oldValue, err := h.CounterRepo.GetByName(model.ID)
+		val, err := h.AddCounter(model.ID, *model.Delta)
 		if err != nil {
-			http.Error(w, "Incorrect value", http.StatusInternalServerError)
+			http.Error(w, "Server error", http.StatusInternalServerError)
 			return
 		}
-		if oldValue != nil {
-			newVal := *model.Delta + oldValue.Value
-			model.Delta = &newVal
-		}
-		h.CounterRepo.Add(dataclass.Metric[int64]{Name: model.ID, Value: *model.Delta})
+		model.Delta = &val
 
 	case "gauge":
 		if model.Value == nil {
 			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		}
-		h.GaugeRepo.Add(dataclass.Metric[float64]{Name: model.ID, Value: *model.Value})
+		err := h.gaugeRepo.Add(dataclass.Metric[float64]{Name: model.ID, Value: *model.Value})
+		if err != nil {
+			http.Error(w, "Server error", http.StatusInternalServerError)
+			return
+		}
 	}
 	responseJSON(w, &model)
+}
+
+func (h *MetricHandler) AddCounter(name string, val int64) (int64, error) {
+	oldValue, err := h.counterRepo.GetByName(name)
+	if err != nil {
+		return 0, err
+	}
+	if oldValue != nil {
+		val += oldValue.Value
+	}
+	h.counterRepo.Add(dataclass.Metric[int64]{Name: name, Value: val})
+	return val, nil
 }
 
 func (h *MetricHandler) GetValue(w http.ResponseWriter, r *http.Request) {
@@ -103,7 +114,7 @@ func (h *MetricHandler) GetValue(w http.ResponseWriter, r *http.Request) {
 	result := ""
 	switch typeMetric {
 	case "gauge":
-		met, err := h.GaugeRepo.GetByName(nameMetric)
+		met, err := h.gaugeRepo.GetByName(nameMetric)
 		if err != nil {
 			log.Print(err)
 		}
@@ -114,7 +125,7 @@ func (h *MetricHandler) GetValue(w http.ResponseWriter, r *http.Request) {
 		result = fmt.Sprintf("%.3f", met.Value)
 
 	case "counter":
-		met, err := h.CounterRepo.GetByName(nameMetric)
+		met, err := h.counterRepo.GetByName(nameMetric)
 		if err != nil {
 			log.Print(err)
 		}
@@ -150,7 +161,7 @@ func (h *MetricHandler) GetJSONValue(w http.ResponseWriter, r *http.Request) {
 
 	switch model.MType {
 	case "gauge":
-		met, err := h.GaugeRepo.GetByName(model.ID)
+		met, err := h.gaugeRepo.GetByName(model.ID)
 		if err != nil {
 			log.Print(err)
 		}
@@ -161,7 +172,7 @@ func (h *MetricHandler) GetJSONValue(w http.ResponseWriter, r *http.Request) {
 		model.Value = &met.Value
 
 	case "counter":
-		met, err := h.CounterRepo.GetByName(model.ID)
+		met, err := h.counterRepo.GetByName(model.ID)
 		if err != nil {
 			log.Print(err)
 		}
@@ -180,11 +191,11 @@ func (h *MetricHandler) GetJSONValue(w http.ResponseWriter, r *http.Request) {
 
 func (h *MetricHandler) Get(w http.ResponseWriter, r *http.Request) {
 
-	counterList, err := h.CounterRepo.GetAll()
+	counterList, err := h.counterRepo.GetAll()
 	if err != nil {
 		log.Fatal(err)
 	}
-	gaugeList, err := h.GaugeRepo.GetAll()
+	gaugeList, err := h.gaugeRepo.GetAll()
 	if err != nil {
 		log.Fatal(err)
 	}
