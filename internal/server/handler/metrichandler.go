@@ -21,6 +21,7 @@ import (
 type MetricHandler struct {
 	counterRepo repository.MetricRepository[int64]
 	gaugeRepo   repository.MetricRepository[float64]
+	Ch          chan int
 }
 
 func NewMetricHandler(counterRepo repository.MetricRepository[int64], gaugeRepo repository.MetricRepository[float64]) MetricHandler {
@@ -55,6 +56,7 @@ func (h *MetricHandler) Update(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Incorrect type", http.StatusNotImplemented)
 		return
 	}
+	h.WriteToFileIdNeeded()
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -92,6 +94,7 @@ func (h *MetricHandler) UpdateJSON(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+	h.WriteToFileIdNeeded()
 	responseJSON(w, &model)
 }
 
@@ -209,6 +212,12 @@ func (h *MetricHandler) Get(w http.ResponseWriter, r *http.Request) {
 	}
 	render.Render(w, "home.html", &models.TemplateDate{Data: map[string]any{"metrics": result}})
 	w.WriteHeader(http.StatusOK)
+}
+
+func (h *MetricHandler) WriteToFileIdNeeded() {
+	if h.Ch != nil {
+		h.Ch <- 1
+	}
 }
 
 type malformedRequest struct {

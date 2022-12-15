@@ -162,7 +162,7 @@ func TestMetricHandler_GetValue(t *testing.T) {
 			cr.Datastorage = tt.fields.counterStorage
 			gr := metricrepository.NewMetricRepository[float64]()
 			gr.Datastorage = tt.fields.gaugeStorage
-			metricHandler := MetricHandler{CounterRepo: &cr, GaugeRepo: &gr}
+			metricHandler := MetricHandler{counterRepo: &cr, gaugeRepo: &gr}
 
 			h := http.HandlerFunc(metricHandler.GetValue)
 			h.ServeHTTP(w, request)
@@ -239,7 +239,7 @@ func TestMetricHandler_GetAll(t *testing.T) {
 			cr.Datastorage = tt.fields.counterStorage
 			gr := metricrepository.NewMetricRepository[float64]()
 			gr.Datastorage = tt.fields.gaugeStorage
-			metricHandler := MetricHandler{CounterRepo: &cr, GaugeRepo: &gr}
+			metricHandler := MetricHandler{counterRepo: &cr, gaugeRepo: &gr}
 
 			h := http.HandlerFunc(metricHandler.Get)
 			h.ServeHTTP(w, request)
@@ -359,7 +359,7 @@ func TestMetricHandler_Update(t *testing.T) {
 			cr.Datastorage = tt.fields.counterStorage
 			gr := metricrepository.NewMetricRepository[float64]()
 			gr.Datastorage = tt.fields.gaugeStorage
-			metricHandler := MetricHandler{CounterRepo: &cr, GaugeRepo: &gr}
+			metricHandler := MetricHandler{counterRepo: &cr, gaugeRepo: &gr}
 
 			for _, arg := range tt.args {
 
@@ -544,7 +544,7 @@ func TestMetricHandler_GetValueJSON(t *testing.T) {
 			cr.Datastorage = tt.fields.counterStorage
 			gr := metricrepository.NewMetricRepository[float64]()
 			gr.Datastorage = tt.fields.gaugeStorage
-			metricHandler := MetricHandler{CounterRepo: &cr, GaugeRepo: &gr}
+			metricHandler := MetricHandler{counterRepo: &cr, gaugeRepo: &gr}
 
 			h := http.HandlerFunc(metricHandler.GetJSONValue)
 			h.ServeHTTP(w, request)
