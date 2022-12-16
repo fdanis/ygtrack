@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"context"
+	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -17,21 +18,28 @@ import (
 
 type Conf struct {
 	Address        string        `env:"ADDRESS" envDefault:"localhost:8080"`
-	PollInterval   time.Duration `env:"POLL_INTERVAL" envDefault:"2s"`
-	ReportInterval time.Duration `env:"REPORT_INTERVAL" envDefault:"10s"`
+	PollInterval   time.Duration `env:"POLL_INTERVAL"`
+	ReportInterval time.Duration `env:"REPORT_INTERVAL"`
 }
 
-func NewConfig() *Conf {
-	config := Conf{}
-	err := env.Parse(&config)
+func readEnv(config *Conf) {
+	err := env.Parse(config)
 	if err != nil {
 		log.Println(err)
 	}
-	return &config
+}
+
+func readFlags(config *Conf) {
+	flag.StringVar(&config.Address, "a", ":8080", "host for server")
+	flag.DurationVar(&config.PollInterval, "p", time.Second*2, "interval fo pooling metrics")
+	flag.DurationVar(&config.ReportInterval, "r", time.Second*10, "interval fo report")
 }
 
 func main() {
-	config := NewConfig()
+	config := Conf{}
+	readFlags(&config)
+	flag.Parse()
+	readEnv(&config)
 	hhelper := httphelper.Helper{}
 	m := memstatservice.NewSimpleMemStatService(hhelper)
 	ctxupdate, cancelu := context.WithCancel(context.Background())

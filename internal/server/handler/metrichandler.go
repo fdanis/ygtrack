@@ -56,7 +56,7 @@ func (h *MetricHandler) Update(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Incorrect type", http.StatusNotImplemented)
 		return
 	}
-	h.WriteToFileIdNeeded()
+	h.WriteToFileIfNeeded()
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -94,7 +94,7 @@ func (h *MetricHandler) UpdateJSON(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	h.WriteToFileIdNeeded()
+	h.WriteToFileIfNeeded()
 	responseJSON(w, &model)
 }
 
@@ -214,7 +214,7 @@ func (h *MetricHandler) Get(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func (h *MetricHandler) WriteToFileIdNeeded() {
+func (h *MetricHandler) WriteToFileIfNeeded() {
 	if h.Ch != nil {
 		h.Ch <- 1
 	}

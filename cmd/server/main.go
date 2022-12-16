@@ -2,10 +2,13 @@ package main
 
 import (
 	"context"
+	"flag"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"path"
+	"time"
 
 	"github.com/fdanis/ygtrack/internal/server/config"
 	"github.com/fdanis/ygtrack/internal/server/handler"
@@ -17,25 +20,39 @@ import (
 
 var app config.AppConfig
 
+func readFlags(c *config.EnvConfig) {
+	flag.StringVar(&c.Address, "a", ":8080", "host for server")
+	flag.BoolVar(&c.Restore, "r", false, "restore data from file")
+	flag.DurationVar(&c.StoreInterval, "i", time.Second*2, "interval fo saving data to file")
+	flag.StringVar(&c.StoreFile, "f", "/tmp/devops-metrics-db.json", "file path")
+}
+
 func main() {
+	//read environments
+	readFlags(&app.EnvConfig)
+	flag.Parse()
+	fmt.Printf("%v", app.EnvConfig)
+	err := app.EnvConfig.ReadEnv()
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("%v", app.EnvConfig)
+
+	//initialize html template
 	cachecdTemplate, err := render.CreateTemplateCache()
 	if err != nil {
 		log.Fatalln(err)
 	}
 	app.TemplateCache = cachecdTemplate
 	app.UseTemplateCache = true
-	env, err := config.NewEnvConfig()
-	if err != nil {
-		log.Fatal(err)
-	}
-	app.EnvConfig = env
 	render.NewTemplates(&app)
 
+	//initialize handler
 	cr := metricrepository.NewMetricRepository[int64]()
 	gr := metricrepository.NewMetricRepository[float64]()
-
 	ch := make(chan int)
 	metricHandler := handler.NewMetricHandler(&cr, &gr)
+	//route
 	r := chi.NewRouter()
 	r.Post("/update/{type}/{name}/{value}", metricHandler.Update)
 	r.Post("/update/", metricHandler.UpdateJSON)
@@ -45,6 +62,7 @@ func main() {
 	r.Get("/value/{type}/{name}", metricHandler.GetValue)
 	r.Get("/", metricHandler.Get)
 
+	//synchronization with file
 	ctx, cancel := context.WithCancel(context.Background())
 	ctxSync, cancelSync := context.WithCancel(context.Background())
 	if app.EnvConfig.StoreFile != "" {

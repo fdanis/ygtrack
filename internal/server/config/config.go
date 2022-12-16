@@ -10,21 +10,20 @@ import (
 type AppConfig struct {
 	UseTemplateCache bool
 	TemplateCache    map[string]*template.Template
-	EnvConfig        *EnvConfig
+	EnvConfig        EnvConfig
 }
 
 type EnvConfig struct {
-	Address       string        `env:"ADDRESS" envDefault:"localhost:8080"`
-	StoreInterval time.Duration `env:"STORE_INTERVAL" envDefault:"15s"`
-	StoreFile     string        `env:"STORE_FILE" envDefault:"/tmp/devops-metrics-db.json"`
-	Restore       bool          `env:"RESTORE" envDefault:"true"`
+	Address       string        `env:"ADDRESS"`
+	StoreInterval time.Duration `env:"STORE_INTERVAL"`
+	StoreFile     string        `env:"STORE_FILE"`
+	Restore       bool          `env:"RESTORE"`
 }
 
-func NewEnvConfig() (*EnvConfig, error) {
-	config := EnvConfig{}
-	err := env.Parse(&config)
+func (c *EnvConfig) ReadEnv() error {
+	err := env.Parse(c)
 	if err != nil {
-		return &config, err
+		return err
 	}
-	return &config, nil
+	return nil
 }
