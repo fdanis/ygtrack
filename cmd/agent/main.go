@@ -42,13 +42,10 @@ func main() {
 	readEnv(&config)
 	hhelper := httphelper.Helper{}
 	m := memstatservice.NewSimpleMemStatService(hhelper)
-	ctxupdate, cancelu := context.WithCancel(context.Background())
-	ctxsend, cancels := context.WithCancel(context.Background())
-	go Update(ctxupdate, config.PollInterval, m)
-	go Send(ctxsend, config.ReportInterval, config.Address, m)
-
-	defer cancelu()
-	defer cancels()
+	ctx, cancel := context.WithCancel(context.Background())
+	go Update(ctx, config.PollInterval, m)
+	go Send(ctx, config.ReportInterval, config.Address, m)
+	defer cancel()
 	for {
 		if false {
 			break
