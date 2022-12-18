@@ -215,8 +215,8 @@ func (h *MetricHandler) Get(w http.ResponseWriter, r *http.Request) {
 	for _, v := range counterList {
 		result[v.Name] = fmt.Sprintf("%d", v.Value)
 	}
+	w.Header().Set("Content-Type", "text/html")
 	render.Render(w, "home.html", &models.TemplateDate{Data: map[string]any{"metrics": result}})
-	w.WriteHeader(http.StatusOK)
 }
 
 func (h *MetricHandler) WriteToFileIfNeeded() {

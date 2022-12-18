@@ -12,7 +12,6 @@ func routes(app *config.AppConfig) http.Handler {
 	metricHandler := handler.NewMetricHandler(&app.CounterRepository, &app.GaugeRepository)
 	mux := chi.NewRouter()
 	mux.Use(GzipHandle)
-	//	mux.Use(SessionLoad)
 	mux.Post("/update/{type}/{name}/{value}", metricHandler.Update)
 	mux.Post("/update/", metricHandler.UpdateJSON)
 	mux.Post("/update", metricHandler.UpdateJSON)

@@ -12,9 +12,7 @@ import (
 	"github.com/fdanis/ygtrack/internal/server/store/repository/metricrepository"
 )
 
-var app config.AppConfig = config.AppConfig{
-
-}
+var app config.AppConfig = config.AppConfig{}
 
 func main() {
 	//read environments
@@ -28,7 +26,7 @@ func main() {
 		log.Fatalln(err)
 	}
 	app.TemplateCache = cachecdTemplate
-	app.UseTemplateCache = true	
+	app.UseTemplateCache = true
 	app.CounterRepository = metricrepository.NewMetricRepository[int64]()
 	app.GaugeRepository = metricrepository.NewMetricRepository[float64]()
 	app.ChForSyncWithFile = make(chan int)
