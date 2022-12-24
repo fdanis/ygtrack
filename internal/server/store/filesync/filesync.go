@@ -5,31 +5,14 @@ import (
 	"encoding/json"
 	"log"
 	"os"
-	"path"
 	"syscall"
 	"time"
 
-	"github.com/fdanis/ygtrack/internal/server/config"
 	"github.com/fdanis/ygtrack/internal/server/store/dataclass"
 	"github.com/fdanis/ygtrack/internal/server/store/repository"
 )
 
-func FileSync(app *config.AppConfig, ctx context.Context) {
-	if app.EnvConfig.StoreFile != "" {
-		os.Mkdir(path.Dir(app.EnvConfig.StoreFile), 0777)
-		if app.EnvConfig.Restore {
-			loadFromFile(app.EnvConfig.StoreFile, &app.GaugeRepository, &app.CounterRepository)
-		}
-		if app.EnvConfig.StoreInterval != 0 {
-			go syncByInterval(app.ChForSyncWithFile, ctx, app.EnvConfig.StoreInterval)
-		} else {
-			app.SaveToFileSync = true
-		}
-		go sync(app.EnvConfig.StoreFile, app.ChForSyncWithFile, ctx, &app.CounterRepository, &app.GaugeRepository)
-	}
-}
-
-func syncByInterval(ch chan int, ctx context.Context, interavl time.Duration) {
+func SyncByInterval(ch chan int, ctx context.Context, interavl time.Duration) {
 	t := time.NewTicker(interavl)
 	for {
 		select {
@@ -44,7 +27,7 @@ func syncByInterval(ch chan int, ctx context.Context, interavl time.Duration) {
 	}
 }
 
-func sync(fileName string, ch chan int, ctx context.Context, counterRepo repository.MetricRepository[int64], gaugeRepo repository.MetricRepository[float64]) {
+func Sync(fileName string, ch chan int, ctx context.Context, counterRepo repository.MetricRepository[int64], gaugeRepo repository.MetricRepository[float64]) {
 	for {
 		select {
 		case <-ch:
@@ -80,7 +63,7 @@ func writeToFile(fileName string, gaugeRepo repository.MetricRepository[float64]
 	enc.Encode(c)
 }
 
-func loadFromFile(fileName string, gaugeRepo repository.MetricRepository[float64], counterRepo repository.MetricRepository[int64]) {
+func LoadFromFile(fileName string, gaugeRepo repository.MetricRepository[float64], counterRepo repository.MetricRepository[int64]) {
 	file, err := os.Open(fileName)
 	if err != nil {
 		log.Println(err)

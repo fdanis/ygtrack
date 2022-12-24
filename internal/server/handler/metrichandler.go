@@ -64,7 +64,7 @@ func (h *MetricHandler) UpdateJSON(w http.ResponseWriter, r *http.Request) {
 
 	var model models.Metrics
 	if err := decodeJSONBody(r.Body, r.Header.Get("Content-Encoding"), &model); err != nil {
-		var mr *malformedRequest
+		var mr *errRequest
 		if errors.As(err, &mr) {
 			http.Error(w, mr.msg, mr.status)
 		} else {
@@ -157,7 +157,7 @@ func (h *MetricHandler) GetJSONValue(w http.ResponseWriter, r *http.Request) {
 	var model models.Metrics
 
 	if err := decodeJSONBody(r.Body, r.Header.Get("Content-Encoding"), &model); err != nil {
-		var mr *malformedRequest
+		var mr *errRequest
 		if errors.As(err, &mr) {
 			http.Error(w, mr.msg, mr.status)
 		} else {

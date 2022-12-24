@@ -6,15 +6,14 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/fdanis/ygtrack/internal/server"
 	"github.com/fdanis/ygtrack/internal/server/config"
 	"github.com/fdanis/ygtrack/internal/server/render"
-	"github.com/fdanis/ygtrack/internal/server/store/filesync"
 	"github.com/fdanis/ygtrack/internal/server/store/repository/metricrepository"
 )
 
-var app config.AppConfig = config.AppConfig{}
-
 func main() {
+	app := config.AppConfig{}
 	//read environments
 	app.EnvConfig.ReadFlags()
 	flag.Parse()
@@ -34,12 +33,15 @@ func main() {
 
 	//synchronization with file
 	ctx, cancel := context.WithCancel(context.Background())
-	filesync.FileSync(&app, ctx)
+	app.FileSync(ctx)
 	defer cancel()
 
 	server := &http.Server{
 		Addr:    app.EnvConfig.Address,
-		Handler: routes(&app),
+		Handler: server.Routes(&app),
 	}
-	server.ListenAndServe()
+	err = server.ListenAndServe()
+	if err != nil {
+		log.Fatal(err)
+	}
 }

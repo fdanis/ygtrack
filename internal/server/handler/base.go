@@ -12,12 +12,12 @@ import (
 	"github.com/fdanis/ygtrack/internal/helpers"
 )
 
-type malformedRequest struct {
+type errRequest struct {
 	status int
 	msg    string
 }
 
-func (mr *malformedRequest) Error() string {
+func (mr *errRequest) Error() string {
 	return mr.msg
 }
 
@@ -46,8 +46,8 @@ func validateContentTypeIsJSON(w http.ResponseWriter, r *http.Request) bool {
 func decodeJSONBody(b io.ReadCloser, contentEncoding string, dst interface{}) error {
 	if contentEncoding != "" {
 		if strings.Contains(strings.ToLower(contentEncoding), "gzip)") {
-			gz := helpers.Gzip.GetReader(b)
-			defer helpers.Gzip.PutReader(gz)
+			gz := helpers.GetPool().GetReader(b)
+			defer helpers.GetPool().PutReader(gz)
 			return decodeJSONBody(gz, "", dst)
 		}
 	}
@@ -63,28 +63,28 @@ func decodeJSONBody(b io.ReadCloser, contentEncoding string, dst interface{}) er
 		switch {
 		case errors.As(err, &syntaxError):
 			msg := fmt.Sprintf("Request body contains badly-formed JSON (at position %d)", syntaxError.Offset)
-			return &malformedRequest{status: http.StatusBadRequest, msg: msg}
+			return &errRequest{status: http.StatusBadRequest, msg: msg}
 
 		case errors.Is(err, io.ErrUnexpectedEOF):
 			msg := "Request body contains badly-formed JSON"
-			return &malformedRequest{status: http.StatusBadRequest, msg: msg}
+			return &errRequest{status: http.StatusBadRequest, msg: msg}
 
 		case errors.As(err, &unmarshalTypeError):
 			msg := fmt.Sprintf("Request body contains an invalid value for the %q field (at position %d)", unmarshalTypeError.Field, unmarshalTypeError.Offset)
-			return &malformedRequest{status: http.StatusBadRequest, msg: msg}
+			return &errRequest{status: http.StatusBadRequest, msg: msg}
 
 		case strings.HasPrefix(err.Error(), "json: unknown field "):
 			fieldName := strings.TrimPrefix(err.Error(), "json: unknown field ")
 			msg := fmt.Sprintf("Request body contains unknown field %s", fieldName)
-			return &malformedRequest{status: http.StatusBadRequest, msg: msg}
+			return &errRequest{status: http.StatusBadRequest, msg: msg}
 
 		case errors.Is(err, io.EOF):
 			msg := "Request body must not be empty"
-			return &malformedRequest{status: http.StatusBadRequest, msg: msg}
+			return &errRequest{status: http.StatusBadRequest, msg: msg}
 
 		case err.Error() == "http: request body too large":
 			msg := "Request body must not be larger than 1MB"
-			return &malformedRequest{status: http.StatusRequestEntityTooLarge, msg: msg}
+			return &errRequest{status: http.StatusRequestEntityTooLarge, msg: msg}
 
 		default:
 			return err
@@ -94,7 +94,7 @@ func decodeJSONBody(b io.ReadCloser, contentEncoding string, dst interface{}) er
 	err = dec.Decode(&struct{}{})
 	if err != io.EOF {
 		msg := "Request body must only contain a single JSON object"
-		return &malformedRequest{status: http.StatusBadRequest, msg: msg}
+		return &errRequest{status: http.StatusBadRequest, msg: msg}
 	}
 
 	return nil

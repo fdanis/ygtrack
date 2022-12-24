@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"net/http"
@@ -8,7 +8,7 @@ import (
 	"github.com/go-chi/chi"
 )
 
-func routes(app *config.AppConfig) http.Handler {
+func Routes(app *config.AppConfig) http.Handler {
 	metricHandler := handler.NewMetricHandler(&app.CounterRepository, &app.GaugeRepository)
 	mux := chi.NewRouter()
 	mux.Use(GzipHandle)

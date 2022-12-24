@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"io"
@@ -14,8 +14,8 @@ func GzipHandle(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 			return
 		}
-		gz := helpers.Gzip.GetWriter(w)
-		defer helpers.Gzip.PutWriter(gz)
+		gz := helpers.GetPool().GetWriter(w)
+		defer helpers.GetPool().PutWriter(gz)
 		w.Header().Set("Content-Encoding", "gzip")
 		next.ServeHTTP(&gzipWriter{ResponseWriter: w, Writer: gz}, r)
 	})

@@ -6,13 +6,20 @@ import (
 	"sync"
 )
 
-var Gzip GzipPool
+var gz *GzipPool
 
 // GzipPool manages a pool of gzip.Writer.
 // The pool uses sync.Pool internally.
 type GzipPool struct {
 	readers sync.Pool
 	writers sync.Pool
+}
+
+func GetPool() *GzipPool {
+	if gz == nil {
+		gz = &GzipPool{}
+	}
+	return gz
 }
 
 // GetReader returns gzip.Reader from the pool, or creates a new one
