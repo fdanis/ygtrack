@@ -26,10 +26,6 @@ type simpleMockHTTPHelper struct {
 	paths map[string]int
 }
 
-func (h *simpleMockHTTPHelper) Get(url string) error {
-	return nil
-}
-
 func (h *simpleMockHTTPHelper) Post(url string, contentType string, data *bytes.Buffer) error {
 	m := models.Metrics{}
 	json.Unmarshal(data.Bytes(), &m)
@@ -93,7 +89,7 @@ func TestSimpleMemStatService_Send(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			res := NewSimpleMemStatService(&tt.hhelper)
+			res := NewSimpleMemStatService(tt.hhelper.Post)
 			res.Update()
 			res.Send(fakeurl)
 			for k, v := range tt.hhelper.paths {

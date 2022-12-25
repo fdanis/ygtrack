@@ -11,7 +11,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/fdanis/ygtrack/internal/helpers"
 	"github.com/fdanis/ygtrack/internal/server/models"
 )
 
@@ -26,13 +25,13 @@ type SimpleMemStatService struct {
 	gaugeDictionary map[string]float64
 	pollCount       int64
 	randomCount     int64
-	httpHelper      helpers.HTTPHelper
+	send            func(url string, contentType string, data *bytes.Buffer) error
 	lock            sync.RWMutex
 }
 
-func NewSimpleMemStatService(hhelp helpers.HTTPHelper) *SimpleMemStatService {
+func NewSimpleMemStatService(send func(url string, contentType string, data *bytes.Buffer) error) *SimpleMemStatService {
 	m := new(SimpleMemStatService)
-	m.httpHelper = hhelp
+	m.send = send
 	m.gaugeDictionary = map[string]float64{}
 	return m
 }
@@ -106,7 +105,7 @@ func (m *SimpleMemStatService) httpSendStat(data *models.Metrics, url string) {
 	if err != nil {
 		log.Printf("could marshal %v", err)
 	}
-	err = m.httpHelper.Post(url, "application/json", bytes.NewBuffer(d))
+	err = m.send(url, "application/json", bytes.NewBuffer(d))
 	if err != nil {
 		log.Printf("could not send metric %v %v", data, err)
 	}
