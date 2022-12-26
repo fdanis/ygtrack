@@ -102,7 +102,6 @@ func (m *SimpleMemStatService) Send(url string) {
 func (m *SimpleMemStatService) httpSendStat(data *models.Metrics, url string) {
 	//url := fmt.Sprintf("%s/%s/%s/%s", host, t, name, val)
 	d, err := json.Marshal(data)
-
 	if err != nil {
 		log.Printf("could marshal %v", err)
 	}
