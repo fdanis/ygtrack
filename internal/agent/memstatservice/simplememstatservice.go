@@ -2,7 +2,9 @@ package memstatservice
 
 import (
 	"bytes"
+	"crypto/hmac"
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -27,12 +29,14 @@ type SimpleMemStatService struct {
 	randomCount     int64
 	send            func(url string, contentType string, data *bytes.Buffer) error
 	lock            sync.RWMutex
+	hashkey         string
 }
 
-func NewSimpleMemStatService(send func(url string, contentType string, data *bytes.Buffer) error) *SimpleMemStatService {
+func NewSimpleMemStatService(hashkey string, send func(url string, contentType string, data *bytes.Buffer) error) *SimpleMemStatService {
 	m := new(SimpleMemStatService)
 	m.send = send
 	m.gaugeDictionary = map[string]float64{}
+	m.hashkey = hashkey
 	return m
 }
 func (m *SimpleMemStatService) Update() {
@@ -98,8 +102,22 @@ func (m *SimpleMemStatService) Send(url string) {
 	m.httpSendStat(&models.Metrics{ID: randomCount, MType: gauge, Value: &randomCountValue}, url)
 }
 
+func (m *SimpleMemStatService) addHash(data *models.Metrics) {
+	if m.hashkey != "" {
+		h := hmac.New(sha256.New, []byte(m.hashkey))
+
+		if data.MType == counter {
+			h.Write([]byte(fmt.Sprintf("%s:counter:%d", data.ID, *data.Delta)))
+		} else {
+			h.Write([]byte(fmt.Sprintf("%s:counter:%f", data.ID, *data.Value)))
+		}
+		data.Hash = string(h.Sum(nil))
+	}
+}
+
 func (m *SimpleMemStatService) httpSendStat(data *models.Metrics, url string) {
 	//url := fmt.Sprintf("%s/%s/%s/%s", host, t, name, val)
+	m.addHash(data)
 	d, err := json.Marshal(data)
 
 	if err != nil {

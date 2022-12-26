@@ -20,8 +20,8 @@ func main() {
 	config := agent.Conf{}
 	agent.ReadFlags(&config)
 	flag.Parse()
-	agent.ReadEnv(&config)	
-	m := memstatservice.NewSimpleMemStatService(httphelper.Post)
+	agent.ReadEnv(&config)
+	m := memstatservice.NewSimpleMemStatService("", httphelper.Post)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	go Update(ctx, config.PollInterval, m)

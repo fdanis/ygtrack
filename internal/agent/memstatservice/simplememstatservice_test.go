@@ -60,7 +60,7 @@ func TestSimpleMemStatService_Update(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			res := NewSimpleMemStatService(nil)
+			res := NewSimpleMemStatService("",nil)
 			res.Update()
 			assert.NotEqual(t, float64(res.gaugeDictionary["Alloc"]), 0, "alloc property not valid")
 			assert.Equal(t, res.pollCount, tt.wantPool, "uint property  not valid")
@@ -89,7 +89,7 @@ func TestSimpleMemStatService_Send(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			res := NewSimpleMemStatService(tt.hhelper.Post)
+			res := NewSimpleMemStatService("",tt.hhelper.Post)
 			res.Update()
 			res.Send(fakeurl)
 			for k, v := range tt.hhelper.paths {
