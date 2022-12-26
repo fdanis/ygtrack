@@ -1,7 +1,11 @@
 package models
 
 import (
+	"crypto/hmac"
+	"crypto/sha256"
 	"encoding/json"
+	"fmt"
+	"log"
 )
 
 type Metrics struct {
@@ -10,6 +14,25 @@ type Metrics struct {
 	Delta *int64   `json:"delta,omitempty"` // значение метрики в случае передачи counter
 	Value *float64 `json:"value,omitempty"` // значение метрики в случае передачи gauge
 	Hash  string   `json:"hash,omitempty"`  // значение хеш-функции
+}
+
+func (m *Metrics) RefreshHash(key string) error {
+	if key != "" {
+		h := hmac.New(sha256.New, []byte(key))
+		if m.MType == "counter" {
+			if _, err := h.Write([]byte(fmt.Sprintf("%s:counter:%d", m.ID, *m.Delta))); err != nil {
+				log.Println("can not get hash for counter")
+				return err
+			}
+		} else {
+			if _, err := h.Write([]byte(fmt.Sprintf("%s:gauge:%f", m.ID, *m.Value))); err != nil {
+				log.Println("can not get hash for gauge")
+				return err
+			}
+		}
+		m.Hash = string(h.Sum(nil))
+	}
+	return nil
 }
 
 func (m *Metrics) UnmarshalJSON(data []byte) error {

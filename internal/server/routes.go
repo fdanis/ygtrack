@@ -9,7 +9,7 @@ import (
 )
 
 func Routes(app *config.AppConfig) http.Handler {
-	metricHandler := handler.NewMetricHandler(&app.CounterRepository, &app.GaugeRepository)
+	metricHandler := handler.NewMetricHandler(app)
 	mux := chi.NewRouter()
 	mux.Use(GzipHandle)
 	mux.Post("/update/{type}/{name}/{value}", metricHandler.Update)

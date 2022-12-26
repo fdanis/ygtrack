@@ -12,7 +12,7 @@ import (
 	"github.com/fdanis/ygtrack/internal/server/store/repository"
 )
 
-func SyncByInterval(ch chan int, ctx context.Context, interavl time.Duration) {
+func SyncByInterval(ctx context.Context, ch chan int, interavl time.Duration) {
 	t := time.NewTicker(interavl)
 	for {
 		select {
@@ -27,7 +27,7 @@ func SyncByInterval(ch chan int, ctx context.Context, interavl time.Duration) {
 	}
 }
 
-func Sync(fileName string, ch chan int, ctx context.Context, counterRepo repository.MetricRepository[int64], gaugeRepo repository.MetricRepository[float64]) {
+func Sync(ctx context.Context, fileName string, ch chan int, counterRepo repository.MetricRepository[int64], gaugeRepo repository.MetricRepository[float64]) {
 	for {
 		select {
 		case <-ch:
@@ -42,7 +42,6 @@ func Sync(fileName string, ch chan int, ctx context.Context, counterRepo reposit
 }
 
 func writeToFile(fileName string, gaugeRepo repository.MetricRepository[float64], counterRepo repository.MetricRepository[int64]) {
-
 	file, err := os.OpenFile(fileName, syscall.O_WRONLY|syscall.O_CREAT|syscall.O_TRUNC, 0777)
 	if err != nil {
 		log.Println(err)
@@ -63,16 +62,23 @@ func writeToFile(fileName string, gaugeRepo repository.MetricRepository[float64]
 	enc.Encode(c)
 }
 
-func LoadFromFile(fileName string, gaugeRepo repository.MetricRepository[float64], counterRepo repository.MetricRepository[int64]) {
+func LoadFromFile(fileName string, gaugeRepo repository.MetricRepository[float64], counterRepo repository.MetricRepository[int64]) error {
+	if _, err := os.Stat(fileName); err != nil {
+		return nil
+	}
+
 	file, err := os.Open(fileName)
 	if err != nil {
-		log.Println(err)
+		return err
 	}
 	defer file.Close()
 
 	enc := json.NewDecoder(file)
 	var val []dataclass.Metric[float64]
-	enc.Decode(&val)
+	err = enc.Decode(&val)
+	if err != nil {
+		return err
+	}
 	for _, item := range val {
 		gaugeRepo.Add(item)
 	}
@@ -81,4 +87,5 @@ func LoadFromFile(fileName string, gaugeRepo repository.MetricRepository[float64
 	for _, item := range cval {
 		counterRepo.Add(item)
 	}
+	return nil
 }

@@ -2,7 +2,6 @@ package agent
 
 import (
 	"flag"
-	"log"
 	"time"
 
 	"github.com/caarlos0/env"
@@ -15,11 +14,12 @@ type Conf struct {
 	Key            string        `env:"KEY"`
 }
 
-func ReadEnv(config *Conf) {
+func ReadEnv(config *Conf) error {
 	err := env.Parse(config)
 	if err != nil {
-		log.Println(err)
+		return err
 	}
+	return nil
 }
 
 func ReadFlags(config *Conf) {

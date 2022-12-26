@@ -2,13 +2,12 @@ package memstatservice
 
 import (
 	"bytes"
-	"crypto/hmac"
 	"crypto/rand"
-	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"log"
 	"math/big"
+	"net/http"
 	"runtime"
 	"sync"
 	"time"
@@ -32,9 +31,9 @@ type SimpleMemStatService struct {
 	hashkey         string
 }
 
-func NewSimpleMemStatService(hashkey string, send func(url string, contentType string, data *bytes.Buffer) error) *SimpleMemStatService {
+func NewSimpleMemStatService(hashkey string) *SimpleMemStatService {
 	m := new(SimpleMemStatService)
-	m.send = send
+	m.send = post
 	m.gaugeDictionary = map[string]float64{}
 	m.hashkey = hashkey
 	return m
@@ -102,24 +101,13 @@ func (m *SimpleMemStatService) Send(url string) {
 	m.httpSendStat(&models.Metrics{ID: randomCount, MType: gauge, Value: &randomCountValue}, url)
 }
 
-func (m *SimpleMemStatService) addHash(data *models.Metrics) {
-	if m.hashkey != "" {
-		h := hmac.New(sha256.New, []byte(m.hashkey))
-
-		if data.MType == counter {
-			h.Write([]byte(fmt.Sprintf("%s:counter:%d", data.ID, *data.Delta)))
-		} else {
-			h.Write([]byte(fmt.Sprintf("%s:counter:%f", data.ID, *data.Value)))
-		}
-		data.Hash = string(h.Sum(nil))
-	}
-}
-
 func (m *SimpleMemStatService) httpSendStat(data *models.Metrics, url string) {
-	//url := fmt.Sprintf("%s/%s/%s/%s", host, t, name, val)
-	m.addHash(data)
+	if m.hashkey != "" {
+		if err := data.RefreshHash(m.hashkey); err != nil {
+			log.Printf("could not refresh hash  %v", err)
+		}
+	}
 	d, err := json.Marshal(data)
-
 	if err != nil {
 		log.Printf("could marshal %v", err)
 	}
@@ -127,4 +115,16 @@ func (m *SimpleMemStatService) httpSendStat(data *models.Metrics, url string) {
 	if err != nil {
 		log.Printf("could not send metric %v %v", data, err)
 	}
+}
+
+func post(url string, contentType string, data *bytes.Buffer) error {
+	res, err := http.Post(url, contentType, data)
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+	if res.StatusCode != http.StatusOK {
+		return fmt.Errorf("got wrong http status (%d)", res.StatusCode)
+	}
+	return nil
 }

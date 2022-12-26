@@ -16,12 +16,6 @@ const (
 	fakeurl = "fake"
 )
 
-func mockRuntimeReadStat(stat *runtime.MemStats) {
-	//stat.WasCount++
-	stat.Alloc = 1234
-	stat.Frees = 123
-}
-
 type simpleMockHTTPHelper struct {
 	paths map[string]int
 }
@@ -60,7 +54,7 @@ func TestSimpleMemStatService_Update(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			res := NewSimpleMemStatService("",nil)
+			res := NewSimpleMemStatService("")
 			res.Update()
 			assert.NotEqual(t, float64(res.gaugeDictionary["Alloc"]), 0, "alloc property not valid")
 			assert.Equal(t, res.pollCount, tt.wantPool, "uint property  not valid")
@@ -89,7 +83,8 @@ func TestSimpleMemStatService_Send(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			res := NewSimpleMemStatService("",tt.hhelper.Post)
+			res := NewSimpleMemStatService("")
+			res.send = tt.hhelper.Post
 			res.Update()
 			res.Send(fakeurl)
 			for k, v := range tt.hhelper.paths {

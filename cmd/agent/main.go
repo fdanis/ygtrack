@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"log"
 	"os"
 	"os/signal"
 	"strings"
@@ -12,7 +13,6 @@ import (
 
 	"github.com/fdanis/ygtrack/internal/agent"
 	"github.com/fdanis/ygtrack/internal/agent/memstatservice"
-	"github.com/fdanis/ygtrack/internal/helpers/httphelper"
 	//"github.com/fdanis/ygtrack/internal/helpers/fakehttphelper"
 )
 
@@ -20,8 +20,11 @@ func main() {
 	config := agent.Conf{}
 	agent.ReadFlags(&config)
 	flag.Parse()
-	agent.ReadEnv(&config)
-	m := memstatservice.NewSimpleMemStatService("", httphelper.Post)
+	err := agent.ReadEnv(&config)
+	if err != nil {
+		log.Fatal(err)
+	}
+	m := memstatservice.NewSimpleMemStatService(config.Key)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	go Update(ctx, config.PollInterval, m)
