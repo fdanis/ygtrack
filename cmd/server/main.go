@@ -17,7 +17,10 @@ func main() {
 	//read environments
 	app.EnvConfig.ReadFlags()
 	flag.Parse()
-	app.EnvConfig.ReadEnv()
+	err := app.EnvConfig.ReadEnv()
+	if err != nil {
+		log.Fatalln(err)
+	}
 
 	//initialize html template
 	cachecdTemplate, err := render.CreateTemplateCache()
@@ -33,8 +36,11 @@ func main() {
 
 	//synchronization with file
 	ctx, cancel := context.WithCancel(context.Background())
-	app.FileSync(ctx)
 	defer cancel()
+	err = app.FileSync(ctx)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	server := &http.Server{
 		Addr:    app.EnvConfig.Address,

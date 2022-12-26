@@ -45,17 +45,24 @@ func (c *Environment) ReadFlags() {
 	flag.StringVar(&c.StoreFile, "f", "/tmp/devops-metrics-db.json", "file path")
 }
 
-func (app *AppConfig) FileSync(ctx context.Context) {
+func (app *AppConfig) FileSync(ctx context.Context) error {
 	if app.EnvConfig.StoreFile != "" {
-		os.Mkdir(path.Dir(app.EnvConfig.StoreFile), 0777)
+		err := os.Mkdir(path.Dir(app.EnvConfig.StoreFile), 0777)
+		if err != nil {
+			return err
+		}
 		if app.EnvConfig.Restore {
-			filesync.LoadFromFile(app.EnvConfig.StoreFile, &app.GaugeRepository, &app.CounterRepository)
+			err = filesync.LoadFromFile(app.EnvConfig.StoreFile, &app.GaugeRepository, &app.CounterRepository)
+			if err != nil {
+				return err
+			}
 		}
 		if app.EnvConfig.StoreInterval != 0 {
-			go filesync.SyncByInterval(app.ChForSyncWithFile, ctx, app.EnvConfig.StoreInterval)
+			go filesync.SyncByInterval(ctx, app.ChForSyncWithFile, app.EnvConfig.StoreInterval)
 		} else {
 			app.SaveToFileSync = true
 		}
-		go filesync.Sync(app.EnvConfig.StoreFile, app.ChForSyncWithFile, ctx, &app.CounterRepository, &app.GaugeRepository)
+		go filesync.Sync(ctx, app.EnvConfig.StoreFile, app.ChForSyncWithFile, &app.CounterRepository, &app.GaugeRepository)
 	}
+	return nil
 }

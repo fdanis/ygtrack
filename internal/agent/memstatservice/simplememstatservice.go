@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"math/big"
+	"net/http"
 	"runtime"
 	"sync"
 	"time"
@@ -29,9 +30,9 @@ type SimpleMemStatService struct {
 	lock            sync.RWMutex
 }
 
-func NewSimpleMemStatService(send func(url string, contentType string, data *bytes.Buffer) error) *SimpleMemStatService {
+func NewSimpleMemStatService() *SimpleMemStatService {
 	m := new(SimpleMemStatService)
-	m.send = send
+	m.send = post
 	m.gaugeDictionary = map[string]float64{}
 	return m
 }
@@ -109,4 +110,16 @@ func (m *SimpleMemStatService) httpSendStat(data *models.Metrics, url string) {
 	if err != nil {
 		log.Printf("could not send metric %v %v", data, err)
 	}
+}
+
+func post(url string, contentType string, data *bytes.Buffer) error {
+	res, err := http.Post(url, contentType, data)
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+	if res.StatusCode != http.StatusOK {
+		return fmt.Errorf("got wrong http status (%d)", res.StatusCode)
+	}
+	return nil
 }
