@@ -2,6 +2,7 @@ package config
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"html/template"
 	"os"
@@ -47,12 +48,15 @@ func (c *Environment) ReadFlags() {
 
 func (app *AppConfig) FileSync(ctx context.Context) error {
 	if app.EnvConfig.StoreFile != "" {
-		err := os.Mkdir(path.Dir(app.EnvConfig.StoreFile), 0777)
-		if err != nil {
-			return err
+		if _, err := os.Stat(path.Dir(app.EnvConfig.StoreFile)); errors.Is(err, os.ErrNotExist) {
+			err := os.Mkdir(path.Dir(app.EnvConfig.StoreFile), 0777)
+			if err != nil {
+				return err
+			}
 		}
+
 		if app.EnvConfig.Restore {
-			err = filesync.LoadFromFile(app.EnvConfig.StoreFile, &app.GaugeRepository, &app.CounterRepository)
+			err := filesync.LoadFromFile(app.EnvConfig.StoreFile, &app.GaugeRepository, &app.CounterRepository)
 			if err != nil {
 				return err
 			}

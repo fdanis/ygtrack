@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"log"
 	"os"
 	"os/signal"
 	"strings"
@@ -19,7 +20,10 @@ func main() {
 	config := agent.Conf{}
 	agent.ReadFlags(&config)
 	flag.Parse()
-	agent.ReadEnv(&config)
+	err := agent.ReadEnv(&config)
+	if err != nil {
+		log.Fatal(err)
+	}
 	m := memstatservice.NewSimpleMemStatService()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
