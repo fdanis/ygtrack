@@ -63,6 +63,10 @@ func writeToFile(fileName string, gaugeRepo repository.MetricRepository[float64]
 }
 
 func LoadFromFile(fileName string, gaugeRepo repository.MetricRepository[float64], counterRepo repository.MetricRepository[int64]) error {
+	if _, err := os.Stat(fileName); err != nil {
+		return nil
+	}
+
 	file, err := os.Open(fileName)
 	if err != nil {
 		return err

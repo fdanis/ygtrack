@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"flag"
-	"fmt"
 	"log"
 	"net/http"
 
@@ -20,6 +19,7 @@ func main() {
 	flag.Parse()
 	err := app.Parameters.ReadEnv()
 	if err != nil {
+		log.Println("Read Env Error")
 		log.Fatalln(err)
 	}
 
@@ -40,16 +40,18 @@ func main() {
 	defer cancel()
 	err = app.FileSync(ctx)
 	if err != nil {
-		fmt.Println("FileSync Error")
-		log.Fatal(err)
+		log.Println("FileSync Error")
+		log.Println(err)
 	}
 
 	server := &http.Server{
 		Addr:    app.Parameters.Address,
 		Handler: server.Routes(&app),
 	}
+	log.Println("server started")
 	err = server.ListenAndServe()
 	if err != nil {
 		log.Fatal(err)
 	}
+	log.Println("server stoped")
 }
