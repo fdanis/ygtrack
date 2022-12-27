@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"github.com/fdanis/ygtrack/cmd/server/config"
-	"github.com/fdanis/ygtrack/cmd/server/models"
+	"github.com/fdanis/ygtrack/internal/server/config"
+	"github.com/fdanis/ygtrack/internal/server/models"
 )
 
 var funcMap = template.FuncMap{}

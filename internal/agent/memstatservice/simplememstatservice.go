@@ -1,37 +1,38 @@
 package memstatservice
 
 import (
+	"bytes"
 	"crypto/rand"
+	"encoding/json"
 	"fmt"
 	"log"
 	"math/big"
+	"net/http"
 	"runtime"
 	"sync"
 	"time"
 
-	"github.com/fdanis/ygtrack/internal/helpers"
+	"github.com/fdanis/ygtrack/internal/server/models"
 )
 
 const (
 	gauge       = "gauge"
 	counter     = "counter"
 	pollCount   = "PollCount"
-	randomCount = "RandomCount"
+	randomCount = "RandomValue"
 )
 
 type SimpleMemStatService struct {
 	gaugeDictionary map[string]float64
 	pollCount       int64
 	randomCount     int64
-	httpHelper      helpers.HTTPHelper
-	updatefunc      func(obj *runtime.MemStats)
+	send            func(url string, contentType string, data *bytes.Buffer) error
 	lock            sync.RWMutex
 }
 
-func NewSimpleMemStatService(hhelp helpers.HTTPHelper, statupdate func(obj *runtime.MemStats)) *SimpleMemStatService {
+func NewSimpleMemStatService() *SimpleMemStatService {
 	m := new(SimpleMemStatService)
-	m.updatefunc = statupdate
-	m.httpHelper = hhelp
+	m.send = post
 	m.gaugeDictionary = map[string]float64{}
 	return m
 }
@@ -40,7 +41,7 @@ func (m *SimpleMemStatService) Update() {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	memstat := runtime.MemStats{}
-	m.updatefunc(&memstat)
+	runtime.ReadMemStats(&memstat)
 	m.gaugeDictionary["Alloc"] = float64(memstat.Alloc)
 	m.gaugeDictionary["BuckHashSys"] = float64(memstat.BuckHashSys)
 	m.gaugeDictionary["Frees"] = float64(memstat.Frees)
@@ -86,21 +87,38 @@ func (m *SimpleMemStatService) Send(url string) {
 		copymap[key] = val
 	}
 	var poolCountValue = m.pollCount
-	var randomCountValue = m.randomCount
+	var randomCountValue = float64(m.randomCount)
 	m.lock.RUnlock()
+
 	for k, v := range copymap {
 		//use go
-		m.httpSendStat(k, gauge, fmt.Sprintf("%.3f", v), url)
+		m.httpSendStat(&models.Metrics{ID: k, MType: gauge, Value: &v}, url)
 	}
 	//use go
-	m.httpSendStat(pollCount, counter, fmt.Sprintf("%d", poolCountValue), url)
-	m.httpSendStat(randomCount, gauge, fmt.Sprintf("%d", randomCountValue), url)
+	m.httpSendStat(&models.Metrics{ID: pollCount, MType: counter, Delta: &poolCountValue}, url)
+	m.httpSendStat(&models.Metrics{ID: randomCount, MType: gauge, Value: &randomCountValue}, url)
 }
 
-func (m *SimpleMemStatService) httpSendStat(name string, t string, val string, host string) {
-	url := fmt.Sprintf("%s/%s/%s/%s", host, t, name, val)
-	err := m.httpHelper.Post(url)
+func (m *SimpleMemStatService) httpSendStat(data *models.Metrics, url string) {
+	//url := fmt.Sprintf("%s/%s/%s/%s", host, t, name, val)
+	d, err := json.Marshal(data)
 	if err != nil {
-		log.Printf("could not send %s metric with value %s %v", name, val, err)
+		log.Printf("could marshal %v", err)
 	}
+	err = m.send(url, "application/json", bytes.NewBuffer(d))
+	if err != nil {
+		log.Printf("could not send metric %v %v", data, err)
+	}
+}
+
+func post(url string, contentType string, data *bytes.Buffer) error {
+	res, err := http.Post(url, contentType, data)
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+	if res.StatusCode != http.StatusOK {
+		return fmt.Errorf("got wrong http status (%d)", res.StatusCode)
+	}
+	return nil
 }

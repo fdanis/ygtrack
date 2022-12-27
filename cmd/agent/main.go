@@ -1,80 +1,69 @@
 package main
 
 import (
-	"bufio"
 	"context"
+	"flag"
 	"fmt"
+	"log"
 	"os"
-	"runtime"
+	"os/signal"
+	"strings"
+	"syscall"
 	"time"
 
-	"github.com/fdanis/ygtrack/cmd/agent/memstatservice"
-	"github.com/fdanis/ygtrack/internal/helpers/httphelper"
+	"github.com/fdanis/ygtrack/internal/agent"
+	"github.com/fdanis/ygtrack/internal/agent/memstatservice"
 	//"github.com/fdanis/ygtrack/internal/helpers/fakehttphelper"
 )
 
-const (
-	pollInterval   int    = 2
-	reportInterval int    = 10
-	serverURL      string = "http://localhost:8080/update"
-)
-
 func main() {
-	hhelper := httphelper.Helper{}
-	m := memstatservice.NewSimpleMemStatService(hhelper, runtime.ReadMemStats)
-
-	ctxupdate, cancelu := context.WithCancel(context.Background())
-	ctxsend, cancels := context.WithCancel(context.Background())
-	//	ctxend, cancele := context.WithCancel(context.Background())
-	go Update(ctxupdate, pollInterval, m)
-	go Send(ctxsend, reportInterval, m)
-
-	for {
-
+	config := agent.Conf{}
+	agent.ReadFlags(&config)
+	flag.Parse()
+	err := agent.ReadEnv(&config)
+	if err != nil {
+		log.Fatal(err)
 	}
-	// go Exit(cancele)
-	// <-ctxend.Done()
-	cancelu()
-	cancels()
-}
-func Exit(cancel context.CancelFunc) {
-	bufio.NewReader(os.Stdin).ReadBytes('q')
-	cancel()
+	m := memstatservice.NewSimpleMemStatService()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go Update(ctx, config.PollInterval, m)
+	go Send(ctx, config.ReportInterval, config.Address, m)
+
+	sig := make(chan os.Signal, 1)
+	signal.Notify(sig, syscall.SIGINT)
+	<-sig
+
+	fmt.Println("exit")
 }
 
-func Update(ctx context.Context, poolInterval int, service *memstatservice.SimpleMemStatService) {
-	t := time.NewTicker(time.Duration(poolInterval) * time.Second)
+func Update(ctx context.Context, poolInterval time.Duration, service *memstatservice.SimpleMemStatService) {
+	t := time.NewTicker(poolInterval)
 	for {
 		select {
 		case <-t.C:
 			service.Update()
 		case <-ctx.Done():
 			{
-				//why I can't see this line in console?
-				fmt.Println("ticker stoped")
+				fmt.Println("update ticker stoped")
 				t.Stop()
 				return
 			}
 		}
-
 	}
-
 }
-func Send(ctx context.Context, sendInterval int, service *memstatservice.SimpleMemStatService) {
-	t := time.NewTicker(time.Duration(sendInterval) * time.Second)
+func Send(ctx context.Context, sendInterval time.Duration, host string, service *memstatservice.SimpleMemStatService) {
+	t := time.NewTicker(sendInterval)
 	for {
 		select {
 		case <-t.C:
-			service.Send(serverURL)
+			service.Send("http://" + strings.TrimRight(host, "/") + "/update")
 		case <-ctx.Done():
 			{
-				//why I can't see this line in console?
 				fmt.Println("send ticker stoped")
 				t.Stop()
 				return
 			}
 		}
-
 	}
-
 }

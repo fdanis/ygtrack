@@ -4,8 +4,8 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/fdanis/ygtrack/cmd/server/store/dataclass"
 	"github.com/fdanis/ygtrack/internal/constraints"
+	"github.com/fdanis/ygtrack/internal/server/store/dataclass"
 )
 
 type MetricRepository[T constraints.Number] struct {

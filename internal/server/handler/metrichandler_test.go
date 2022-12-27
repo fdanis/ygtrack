@@ -1,18 +1,22 @@
 package handler
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"testing"
 
-	"github.com/fdanis/ygtrack/cmd/server/config"
-	"github.com/fdanis/ygtrack/cmd/server/render"
-	"github.com/fdanis/ygtrack/cmd/server/store/dataclass"
-	"github.com/fdanis/ygtrack/cmd/server/store/repository/metricrepository"
+	"github.com/fdanis/ygtrack/internal/server/config"
+	"github.com/fdanis/ygtrack/internal/server/models"
+	"github.com/fdanis/ygtrack/internal/server/render"
+	"github.com/fdanis/ygtrack/internal/server/store/dataclass"
+	"github.com/fdanis/ygtrack/internal/server/store/repository/metricrepository"
 	"github.com/go-chi/chi"
 	"github.com/stretchr/testify/assert"
 )
@@ -158,7 +162,7 @@ func TestMetricHandler_GetValue(t *testing.T) {
 			cr.Datastorage = tt.fields.counterStorage
 			gr := metricrepository.NewMetricRepository[float64]()
 			gr.Datastorage = tt.fields.gaugeStorage
-			metricHandler := MetricHandler{CounterRepo: &cr, GaugeRepo: &gr}
+			metricHandler := MetricHandler{counterRepo: &cr, gaugeRepo: &gr}
 
 			h := http.HandlerFunc(metricHandler.GetValue)
 			h.ServeHTTP(w, request)
@@ -235,7 +239,7 @@ func TestMetricHandler_GetAll(t *testing.T) {
 			cr.Datastorage = tt.fields.counterStorage
 			gr := metricrepository.NewMetricRepository[float64]()
 			gr.Datastorage = tt.fields.gaugeStorage
-			metricHandler := MetricHandler{CounterRepo: &cr, GaugeRepo: &gr}
+			metricHandler := MetricHandler{counterRepo: &cr, gaugeRepo: &gr}
 
 			h := http.HandlerFunc(metricHandler.Get)
 			h.ServeHTTP(w, request)
@@ -355,7 +359,7 @@ func TestMetricHandler_Update(t *testing.T) {
 			cr.Datastorage = tt.fields.counterStorage
 			gr := metricrepository.NewMetricRepository[float64]()
 			gr.Datastorage = tt.fields.gaugeStorage
-			metricHandler := MetricHandler{CounterRepo: &cr, GaugeRepo: &gr}
+			metricHandler := MetricHandler{counterRepo: &cr, gaugeRepo: &gr}
 
 			for _, arg := range tt.args {
 
@@ -394,6 +398,191 @@ func TestMetricHandler_Update(t *testing.T) {
 			assert.ElementsMatch(t, gaugeList, tt.want.gaugeStorage)
 			assert.ElementsMatch(t, counterList, tt.want.counterStorage)
 
+		})
+	}
+}
+
+func TestMetricHandler_GetValueJSON(t *testing.T) {
+	type fields struct {
+		counterStorage *map[string]dataclass.Metric[int64]
+		gaugeStorage   *map[string]dataclass.Metric[float64]
+	}
+
+	type args struct {
+		typeName   string
+		metricName string
+	}
+
+	// определяем структуру теста
+	type want struct {
+		code        int
+		response    string
+		contentType string
+	}
+	// создаём массив тестов: имя и желаемый результат
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   want
+	}{
+		// определяем все тесты
+		{
+			name: "positive test #1",
+			fields: fields{
+				counterStorage: &map[string]dataclass.Metric[int64]{"count": {Name: "Count", Value: 5}},
+				gaugeStorage:   &map[string]dataclass.Metric[float64]{"test1": {Name: "TEst1", Value: 1}, "test2": {Name: "test2", Value: 2}},
+			},
+			args: args{typeName: "counter", metricName: "Count"},
+			want: want{
+				code:        200,
+				response:    "5",
+				contentType: "application/json",
+			},
+		},
+		{
+			name: "positive test minus counter",
+			fields: fields{
+				counterStorage: &map[string]dataclass.Metric[int64]{"count": {Name: "Count", Value: -2345}},
+				gaugeStorage:   &map[string]dataclass.Metric[float64]{"test1": {Name: "TEst1", Value: 1}, "test2": {Name: "test2", Value: 2}},
+			},
+			args: args{typeName: "counter", metricName: "Count"},
+			want: want{
+				code:        200,
+				response:    "-2345",
+				contentType: "application/json",
+			},
+		},
+		{
+			name: "fake_type_counter should be 501 #1",
+			fields: fields{
+				counterStorage: &map[string]dataclass.Metric[int64]{"count": {Name: "Count", Value: 5}},
+				gaugeStorage:   &map[string]dataclass.Metric[float64]{"test1": {Name: "TEst1", Value: 1}, "test2": {Name: "test2", Value: 2}},
+			},
+			args: args{typeName: "fake_counter", metricName: "Count"},
+			want: want{
+				code:        501,
+				response:    "",
+				contentType: "application/json",
+			},
+		},
+		{
+			name: "incorect counter name",
+			fields: fields{
+				counterStorage: &map[string]dataclass.Metric[int64]{"count": {Name: "Count", Value: 5}},
+				gaugeStorage:   &map[string]dataclass.Metric[float64]{"test1": {Name: "TEst1", Value: 1}, "test2": {Name: "test2", Value: 2}},
+			},
+			args: args{typeName: "counter", metricName: "Fake_Count"},
+			want: want{
+				code:        404,
+				response:    "",
+				contentType: "application/json",
+			},
+		},
+		{
+			name: "incorect gouge name",
+			fields: fields{
+				counterStorage: &map[string]dataclass.Metric[int64]{"count": {Name: "Count", Value: 5}},
+				gaugeStorage:   &map[string]dataclass.Metric[float64]{"test1": {Name: "TEst1", Value: 1}, "test2": {Name: "test2", Value: 2}}},
+			args: args{typeName: "gauge", metricName: "Fake_Count"},
+			want: want{
+				code:        404,
+				response:    "",
+				contentType: "application/json",
+			},
+		},
+		{
+			name: "get gouge by name",
+			fields: fields{
+				counterStorage: &map[string]dataclass.Metric[int64]{"count": {Name: "Count", Value: 5}},
+				gaugeStorage:   &map[string]dataclass.Metric[float64]{"test1": {Name: "TEst1", Value: 1}, "test2": {Name: "test2", Value: 2}}},
+			args: args{typeName: "gauge", metricName: "test1"},
+			want: want{
+				code:        200,
+				response:    "1.000",
+				contentType: "application/json",
+			},
+		},
+		{
+			name: "get gouge by upercase name",
+			fields: fields{
+				counterStorage: &map[string]dataclass.Metric[int64]{"count": {Name: "Count", Value: 5}},
+				gaugeStorage:   &map[string]dataclass.Metric[float64]{"test1": {Name: "TEst1", Value: 1}, "test2": {Name: "test2", Value: 2}}},
+			args: args{typeName: "gauge", metricName: "Test1"},
+			want: want{
+				code:        200,
+				response:    "1.000",
+				contentType: "application/json",
+			},
+		},
+		{
+			name: "get counter by upercase name",
+			fields: fields{
+				counterStorage: &map[string]dataclass.Metric[int64]{"count": {Name: "Count", Value: 5}},
+				gaugeStorage:   &map[string]dataclass.Metric[float64]{"test1": {Name: "TEst1", Value: 1}, "test2": {Name: "test2", Value: 2}}},
+			args: args{typeName: "counter", metricName: "COUNT"},
+			want: want{
+				code:        200,
+				response:    "5",
+				contentType: "application/json",
+			},
+		},
+	}
+	for _, tt := range tests {
+
+		t.Run(tt.name, func(t *testing.T) {
+
+			model := models.Metrics{ID: tt.args.metricName, MType: tt.args.typeName}
+			data, err := json.Marshal(model)
+			if err != nil {
+				log.Fatal()
+			}
+			request := httptest.NewRequest(http.MethodPost, "/value", bytes.NewBuffer(data))
+			request.Header.Set("Content-Type", "application/json")
+			w := httptest.NewRecorder()
+			cr := metricrepository.NewMetricRepository[int64]()
+			cr.Datastorage = tt.fields.counterStorage
+			gr := metricrepository.NewMetricRepository[float64]()
+			gr.Datastorage = tt.fields.gaugeStorage
+			metricHandler := MetricHandler{counterRepo: &cr, gaugeRepo: &gr}
+
+			h := http.HandlerFunc(metricHandler.GetJSONValue)
+			h.ServeHTTP(w, request)
+			res := w.Result()
+
+			if res.StatusCode != tt.want.code {
+				t.Errorf("Expected status code %d, got %d", tt.want.code, w.Code)
+			}
+
+			defer res.Body.Close()
+
+			dec := json.NewDecoder(res.Body)
+			dec.Decode(&model)
+
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			switch tt.args.typeName {
+			case "gauge":
+
+				if s, err := strconv.ParseFloat(tt.want.response, 64); err == nil {
+					assert.Equal(t, s, *model.Value)
+				} else {
+					assert.Nil(t, model.Value, "value should be empty")
+				}
+			case "counter":
+				if s, err := strconv.ParseInt(tt.want.response, 10, 64); err == nil {
+					assert.Equal(t, s, *model.Delta)
+				} else {
+					assert.Nil(t, model.Delta, "value should be empty")
+				}
+
+			}
+
+			if res.Header.Get("Content-Type") != tt.want.contentType {
+				t.Errorf("Expected Content-Type %s, got %s", tt.want.contentType, res.Header.Get("Content-Type"))
+			}
 		})
 	}
 }

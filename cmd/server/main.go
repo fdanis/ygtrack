@@ -1,41 +1,57 @@
 package main
 
 import (
+	"context"
+	"flag"
 	"log"
 	"net/http"
 
-	"github.com/fdanis/ygtrack/cmd/server/config"
-	"github.com/fdanis/ygtrack/cmd/server/handler"
-	"github.com/fdanis/ygtrack/cmd/server/render"
-	"github.com/fdanis/ygtrack/cmd/server/store/repository/metricrepository"
-	"github.com/go-chi/chi"
+	"github.com/fdanis/ygtrack/internal/server"
+	"github.com/fdanis/ygtrack/internal/server/config"
+	"github.com/fdanis/ygtrack/internal/server/render"
+	"github.com/fdanis/ygtrack/internal/server/store/repository/metricrepository"
 )
 
-var app config.AppConfig
-
 func main() {
+	app := config.AppConfig{}
+	//read environments
+	app.Parameters.ReadFlags()
+	flag.Parse()
+	err := app.Parameters.ReadEnv()
+	if err != nil {
+		log.Println("Read Env Error")
+		log.Fatalln(err)
+	}
 
+	//initialize html template
 	cachecdTemplate, err := render.CreateTemplateCache()
 	if err != nil {
 		log.Fatalln(err)
 	}
-
 	app.TemplateCache = cachecdTemplate
 	app.UseTemplateCache = true
-
+	app.CounterRepository = metricrepository.NewMetricRepository[int64]()
+	app.GaugeRepository = metricrepository.NewMetricRepository[float64]()
+	app.ChForSyncWithFile = make(chan int)
 	render.NewTemplates(&app)
-	cr := metricrepository.NewMetricRepository[int64]()
-	gr := metricrepository.NewMetricRepository[float64]()
-	metricHandler := handler.MetricHandler{CounterRepo: &cr, GaugeRepo: &gr}
-	r := chi.NewRouter()
-	r.Post("/update/{type}/{name}/{value}", metricHandler.Update)
-	r.Get("/value/{type}/{name}", metricHandler.GetValue)
-	r.Get("/", metricHandler.Get)
+
+	//synchronization with file
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	err = app.FileSync(ctx)
+	if err != nil {
+		log.Println("FileSync Error")
+		log.Println(err)
+	}
 
 	server := &http.Server{
-		Addr:    ":8080",
-		Handler: r,
+		Addr:    app.Parameters.Address,
+		Handler: server.Routes(&app),
 	}
-	server.ListenAndServe()
-
+	log.Println("server started")
+	err = server.ListenAndServe()
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Println("server stoped")
 }
