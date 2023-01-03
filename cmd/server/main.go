@@ -27,7 +27,6 @@ func main() {
 	}
 
 	var db *driver.DB
-	app.Parameters.ConnectionString = "postgres://RxAdviceServices:cbltkfDjhjyf1@localhost:5432/temp"
 	if app.Parameters.ConnectionString != "" {
 		db, err = driver.ConnectSQL(app.Parameters.ConnectionString)
 		if err != nil {
