@@ -23,19 +23,19 @@ func (r pgxGougeRepository) GetAll(ctx context.Context) ([]dataclass.Metric[floa
 	row, err := r.db.QueryContext(ctx, `	
 	with last as 
 		(select 
-			name, 
+			id, 
 			max(created) created 
 		 FROM public.gaugemetric 
-		 group by name)
+		 group by id)
 	select 
-		g.name,
+		g.id,
 		g.val 
 	from public.gaugemetric g 
-	where exists (select 1 from last where last.name = g.name and last.created = g.created limit 1);`)
+	where exists (select 1 from last where last.id = g.id and last.created = g.created limit 1);`)
 	if err != nil {
 		return nil, err
 	}
-
+	defer row.Close()
 	for row.Next() {
 		m := dataclass.Metric[float64]{}
 		err = row.Scan(&m.Name, &m.Value)
@@ -53,7 +53,7 @@ func (r pgxGougeRepository) GetAll(ctx context.Context) ([]dataclass.Metric[floa
 }
 
 func (r pgxGougeRepository) GetByName(ctx context.Context, name string) (*dataclass.Metric[float64], error) {
-	row := r.db.QueryRowContext(ctx, "select name, val FROM public.gaugemetric where name = $1 order by created desc limit 1", name)
+	row := r.db.QueryRowContext(ctx, "select id, val FROM public.gaugemetric where id = $1 order by created desc limit 1", name)
 
 	m := dataclass.Metric[float64]{}
 	err := row.Scan(&m.Name, &m.Value)
@@ -66,7 +66,7 @@ func (r pgxGougeRepository) GetByName(ctx context.Context, name string) (*datacl
 }
 
 func (r pgxGougeRepository) Add(ctx context.Context, data dataclass.Metric[float64]) error {
-	s, err := r.db.ExecContext(ctx, "insert into public.gaugemetric (name,val) values ($1,$2)", data.Name, data.Value)
+	s, err := r.db.ExecContext(ctx, "insert into public.gaugemetric (id,val) values ($1,$2)", data.Name, data.Value)
 	if err != nil {
 		return err
 	}

@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"log"
@@ -23,13 +24,15 @@ type MetricHandler struct {
 	gaugeRepo   repository.MetricRepository[float64]
 	ch          *chan int
 	hashkey     string
+	db          *sql.DB
 }
 
-func NewMetricHandler(app *config.AppConfig) MetricHandler {
+func NewMetricHandler(app *config.AppConfig, db *sql.DB) MetricHandler {
 	result := MetricHandler{
 		counterRepo: app.CounterRepository,
 		gaugeRepo:   app.GaugeRepository,
 		hashkey:     app.Parameters.Key,
+		db:          db,
 	}
 	if app.SaveToFileSync {
 		result.ch = &app.ChForSyncWithFile
@@ -102,7 +105,7 @@ func (h *MetricHandler) UpdateJSON(w http.ResponseWriter, r *http.Request) {
 		if model.Delta == nil {
 			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		}
-		ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+		ctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
 		defer cancel()
 		val, err := h.AddCounter(ctx, model.ID, *model.Delta)
 		if err != nil {
@@ -114,10 +117,12 @@ func (h *MetricHandler) UpdateJSON(w http.ResponseWriter, r *http.Request) {
 		if model.Value == nil {
 			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		}
-		ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+		ctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
 		defer cancel()
 		err := h.gaugeRepo.Add(ctx, dataclass.Metric[float64]{Name: model.ID, Value: *model.Value})
 		if err != nil {
+			log.Println(err)
+			fmt.Println(err)
 			http.Error(w, "Server error", http.StatusInternalServerError)
 			return
 		}
@@ -252,6 +257,15 @@ func (h *MetricHandler) Get(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "text/html")
 	render.Render(w, "home.html", &models.TemplateDate{Data: map[string]any{"metrics": result}})
+}
+
+func (h *MetricHandler) Ping(w http.ResponseWriter, r *http.Request) {
+	err := h.db.Ping()
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+	return
 }
 
 func (h *MetricHandler) WriteToFileIfNeeded() {

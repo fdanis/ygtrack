@@ -14,8 +14,8 @@ type DB struct {
 
 var dbConn = &DB{}
 
-const maxOpenConn = 10
-const maxIdleConn = 5
+const maxOpenConn = 15
+const maxIdleConn = 15
 const maxDbLifeTime = 5 * time.Minute
 
 func ConnectSQL(dsn string) (*DB, error) {
@@ -44,9 +44,9 @@ func ConnectSQL(dsn string) (*DB, error) {
 
 func CreateTabels(d *sql.DB) error {
 	_, err := d.Exec(`
-	CREATE TABLE IF NOT EXISTS public.countmetric (val integer,created timestamp default now() PRIMARY KEY);
+	CREATE TABLE IF NOT EXISTS public.countmetric (id varchar(100),val bigint,created timestamp default now(),CONSTRAINT counter_id_time PRIMARY KEY(id,created));
 	                                  
-	CREATE TABLE IF NOT EXISTS public.gaugemetric (name varchar(100), val numeric,created timestamp default now(), CONSTRAINT name_time PRIMARY KEY(name,created));
+	CREATE TABLE IF NOT EXISTS public.gaugemetric (id varchar(100), val numeric(100,32), created timestamp default now(), CONSTRAINT id_time PRIMARY KEY(id,created));
 	`)
 	if err != nil {
 		return err

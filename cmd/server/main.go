@@ -62,7 +62,7 @@ func main() {
 	}
 	server := &http.Server{
 		Addr:    app.Parameters.Address,
-		Handler: server.Routes(&app),
+		Handler: server.Routes(&app, db.SQL),
 	}
 	log.Println("server started")
 	err = server.ListenAndServe()

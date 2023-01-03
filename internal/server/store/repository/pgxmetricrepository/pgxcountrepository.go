@@ -20,32 +20,52 @@ func NewCountRepository(d *sql.DB) repository.MetricRepository[int64] {
 func (r pgxCountRepository) GetAll(ctx context.Context) ([]dataclass.Metric[int64], error) {
 	res := make([]dataclass.Metric[int64], 0, 1)
 
-	m, err := r.GetByName(ctx, "")
+	row, err := r.db.QueryContext(ctx, `	
+	with last as 
+		(select 
+			id, 
+			max(created) created 
+		 FROM public.countmetric 
+		 group by id)
+	select 
+		g.id,
+		g.val 
+	from public.countmetric g 
+	where exists (select 1 from last where last.id = g.id and last.created = g.created limit 1);`)
+	if err != nil {
+		return nil, err
+	}
+	defer row.Close()
+	for row.Next() {
+		m := dataclass.Metric[int64]{}
+		err = row.Scan(&m.Name, &m.Value)
+		if err != nil {
+			return nil, err
+		}
+		res = append(res, m)
+	}
+	err = row.Err()
 	if err != nil {
 		return nil, err
 	}
 
-	res = append(res, *m)
 	return res, nil
 }
 
 func (r pgxCountRepository) GetByName(ctx context.Context, name string) (*dataclass.Metric[int64], error) {
-	row := r.db.QueryRowContext(ctx, "SELECT val FROM public.countmetric order by created desc limit 1")
-	var val sql.NullInt64
+	row := r.db.QueryRowContext(ctx, "SELECT id, val FROM public.countmetric where id=$1 order by created desc limit 1", name)
+	var val int64
 	err := row.Scan(&val)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	} else if err != nil {
 		return nil, err
 	}
-	if !val.Valid {
-		return nil, nil
-	}
-	return &dataclass.Metric[int64]{Name: "count", Value: val.Int64}, nil
+	return &dataclass.Metric[int64]{Name: "count", Value: val}, nil
 }
 
 func (r pgxCountRepository) Add(ctx context.Context, data dataclass.Metric[int64]) error {
-	s, err := r.db.ExecContext(ctx, "insert into public.countmetric (val) values ($1)", data.Value)
+	s, err := r.db.ExecContext(ctx, "insert into public.countmetric (val,id) values ($1,$2)", data.Value, data.Name)
 	if err != nil {
 		return err
 	}
