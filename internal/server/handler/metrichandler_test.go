@@ -158,9 +158,9 @@ func TestMetricHandler_GetValue(t *testing.T) {
 			request = request.WithContext(context.WithValue(request.Context(), chi.RouteCtxKey, rctx))
 
 			w := httptest.NewRecorder()
-			cr := metricrepository.NewMetricRepository[int64]()
+			cr := metricrepository.MetricRepository[int64]{}
 			cr.Datastorage = tt.fields.counterStorage
-			gr := metricrepository.NewMetricRepository[float64]()
+			gr := metricrepository.MetricRepository[float64]{}
 			gr.Datastorage = tt.fields.gaugeStorage
 			metricHandler := MetricHandler{counterRepo: &cr, gaugeRepo: &gr}
 
@@ -235,9 +235,9 @@ func TestMetricHandler_GetAll(t *testing.T) {
 			request := httptest.NewRequest(http.MethodGet, "/", nil)
 
 			w := httptest.NewRecorder()
-			cr := metricrepository.NewMetricRepository[int64]()
+			cr := metricrepository.MetricRepository[int64]{}
 			cr.Datastorage = tt.fields.counterStorage
-			gr := metricrepository.NewMetricRepository[float64]()
+			gr := metricrepository.MetricRepository[float64]{}
 			gr.Datastorage = tt.fields.gaugeStorage
 			metricHandler := MetricHandler{counterRepo: &cr, gaugeRepo: &gr}
 
@@ -355,9 +355,9 @@ func TestMetricHandler_Update(t *testing.T) {
 	for _, tt := range tests {
 
 		t.Run(tt.name, func(t *testing.T) {
-			cr := metricrepository.NewMetricRepository[int64]()
+			cr := metricrepository.MetricRepository[int64]{}
 			cr.Datastorage = tt.fields.counterStorage
-			gr := metricrepository.NewMetricRepository[float64]()
+			gr := metricrepository.MetricRepository[float64]{}
 			gr.Datastorage = tt.fields.gaugeStorage
 			metricHandler := MetricHandler{counterRepo: &cr, gaugeRepo: &gr}
 
@@ -540,9 +540,9 @@ func TestMetricHandler_GetValueJSON(t *testing.T) {
 			request := httptest.NewRequest(http.MethodPost, "/value", bytes.NewBuffer(data))
 			request.Header.Set("Content-Type", "application/json")
 			w := httptest.NewRecorder()
-			cr := metricrepository.NewMetricRepository[int64]()
+			cr := metricrepository.MetricRepository[int64]{}
 			cr.Datastorage = tt.fields.counterStorage
-			gr := metricrepository.NewMetricRepository[float64]()
+			gr := metricrepository.MetricRepository[float64]{}
 			gr.Datastorage = tt.fields.gaugeStorage
 			metricHandler := MetricHandler{counterRepo: &cr, gaugeRepo: &gr}
 

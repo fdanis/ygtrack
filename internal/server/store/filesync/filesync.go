@@ -49,13 +49,13 @@ func writeToFile(fileName string, gaugeRepo repository.MetricRepository[float64]
 	defer file.Close()
 
 	enc := json.NewEncoder(file)
-	g, err := gaugeRepo.GetAll()
+	g, err := gaugeRepo.GetAll(nil)
 	if err != nil {
 		log.Println(err)
 	}
 	enc.Encode(g)
 
-	c, err := counterRepo.GetAll()
+	c, err := counterRepo.GetAll(nil)
 	if err != nil {
 		log.Println(err)
 	}
@@ -80,12 +80,12 @@ func LoadFromFile(fileName string, gaugeRepo repository.MetricRepository[float64
 		return err
 	}
 	for _, item := range val {
-		gaugeRepo.Add(item)
+		gaugeRepo.Add(nil, item)
 	}
 	var cval []dataclass.Metric[int64]
 	enc.Decode(&cval)
 	for _, item := range cval {
-		counterRepo.Add(item)
+		counterRepo.Add(nil, item)
 	}
 	return nil
 }

@@ -61,7 +61,7 @@ func TestMetricRepository_Add(t *testing.T) {
 			typ := map[string]dataclass.Metric[int64]{}
 
 			for _, v := range tt.args {
-				if err := r.Add(v.data); (err != nil) != tt.wantErr {
+				if err := r.Add(nil, v.data); (err != nil) != tt.wantErr {
 					t.Errorf("MetricRepository.Add() error = %v, wantErr %v", err, tt.wantErr)
 				}
 				typ[v.data.Name] = dataclass.Metric[int64]{Name: v.data.Name, Value: v.data.Value}
@@ -123,7 +123,7 @@ func TestMetricRepository_GetByName(t *testing.T) {
 			r := &MetricRepository[int64]{
 				Datastorage: tt.fields.Datastorage,
 			}
-			got, err := r.GetByName(tt.args.name)
+			got, err := r.GetByName(nil, tt.args.name)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("MetricRepository.GetByName() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -178,7 +178,7 @@ func TestMetricRepository_GetAll(t *testing.T) {
 			r := &MetricRepository[int64]{
 				Datastorage: tt.fields.Datastorage,
 			}
-			got, err := r.GetAll()
+			got, err := r.GetAll(nil)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("MetricRepository.GetAll() error = %v, wantErr %v", err, tt.wantErr)
 				return

@@ -3,6 +3,7 @@ package models
 import (
 	"crypto/hmac"
 	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -30,7 +31,7 @@ func (m *Metrics) RefreshHash(key string) error {
 				return err
 			}
 		}
-		m.Hash = string(h.Sum(nil))
+		m.Hash = hex.EncodeToString(h.Sum(nil))
 	}
 	return nil
 }
