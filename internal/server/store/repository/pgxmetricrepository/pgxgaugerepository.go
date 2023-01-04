@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"time"
 
 	"github.com/fdanis/ygtrack/internal/server/store/dataclass"
 	"github.com/fdanis/ygtrack/internal/server/store/repository"
@@ -17,9 +18,10 @@ func NewGougeRepository(d *sql.DB) repository.MetricRepository[float64] {
 	return pgxGougeRepository{db: d}
 }
 
-func (r pgxGougeRepository) GetAll(ctx context.Context) ([]dataclass.Metric[float64], error) {
+func (r pgxGougeRepository) GetAll() ([]dataclass.Metric[float64], error) {
 	res := make([]dataclass.Metric[float64], 0, 40)
-
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 	row, err := r.db.QueryContext(ctx, `	
 	with last as 
 		(select 
@@ -52,7 +54,9 @@ func (r pgxGougeRepository) GetAll(ctx context.Context) ([]dataclass.Metric[floa
 	return res, nil
 }
 
-func (r pgxGougeRepository) GetByName(ctx context.Context, name string) (*dataclass.Metric[float64], error) {
+func (r pgxGougeRepository) GetByName(name string) (*dataclass.Metric[float64], error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 	row := r.db.QueryRowContext(ctx, "select id, val FROM public.gaugemetric where id = $1 order by created desc limit 1", name)
 
 	m := dataclass.Metric[float64]{}
@@ -65,7 +69,9 @@ func (r pgxGougeRepository) GetByName(ctx context.Context, name string) (*datacl
 	return &m, nil
 }
 
-func (r pgxGougeRepository) Add(ctx context.Context, data dataclass.Metric[float64]) error {
+func (r pgxGougeRepository) Add(data dataclass.Metric[float64]) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 	s, err := r.db.ExecContext(ctx, "insert into public.gaugemetric (id,val) values ($1,$2)", data.Name, data.Value)
 	if err != nil {
 		return err

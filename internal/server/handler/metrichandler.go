@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -9,7 +8,6 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/fdanis/ygtrack/internal/server/config"
 	"github.com/fdanis/ygtrack/internal/server/models"
@@ -44,8 +42,6 @@ func (h *MetricHandler) Update(w http.ResponseWriter, r *http.Request) {
 	typeMetric := strings.ToLower(chi.URLParam(r, "type"))
 	nameMetric := chi.URLParam(r, "name")
 	valueMetric := chi.URLParam(r, "value")
-	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
-	defer cancel()
 	switch typeMetric {
 	case "gauge":
 		val, err := strconv.ParseFloat(valueMetric, 64)
@@ -53,14 +49,14 @@ func (h *MetricHandler) Update(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Incorrect value", http.StatusBadRequest)
 			return
 		}
-		h.gaugeRepo.Add(ctx, dataclass.Metric[float64]{Name: nameMetric, Value: val})
+		h.gaugeRepo.Add(dataclass.Metric[float64]{Name: nameMetric, Value: val})
 	case "counter":
 		val, err := strconv.ParseInt(valueMetric, 10, 64)
 		if err != nil {
 			http.Error(w, "Incorrect value", http.StatusBadRequest)
 			return
 		}
-		_, err = h.AddCounter(ctx, nameMetric, val)
+		_, err = h.AddCounter(nameMetric, val)
 		if err != nil {
 			http.Error(w, "Incorrect value", http.StatusInternalServerError)
 			return
@@ -105,9 +101,7 @@ func (h *MetricHandler) UpdateJSON(w http.ResponseWriter, r *http.Request) {
 		if model.Delta == nil {
 			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		}
-		ctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
-		defer cancel()
-		val, err := h.AddCounter(ctx, model.ID, *model.Delta)
+		val, err := h.AddCounter(model.ID, *model.Delta)
 		if err != nil {
 			http.Error(w, "Server error", http.StatusInternalServerError)
 			return
@@ -117,9 +111,7 @@ func (h *MetricHandler) UpdateJSON(w http.ResponseWriter, r *http.Request) {
 		if model.Value == nil {
 			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		}
-		ctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
-		defer cancel()
-		err := h.gaugeRepo.Add(ctx, dataclass.Metric[float64]{Name: model.ID, Value: *model.Value})
+		err := h.gaugeRepo.Add(dataclass.Metric[float64]{Name: model.ID, Value: *model.Value})
 		if err != nil {
 			log.Println(err)
 			fmt.Println(err)
@@ -131,20 +123,15 @@ func (h *MetricHandler) UpdateJSON(w http.ResponseWriter, r *http.Request) {
 	responseJSON(w, &model)
 }
 
-func (h *MetricHandler) AddCounter(ctx context.Context, name string, val int64) (int64, error) {
-
-	ctx1, cancel := context.WithTimeout(ctx, 5*time.Second)
-	defer cancel()
-	oldValue, err := h.counterRepo.GetByName(ctx1, name)
+func (h *MetricHandler) AddCounter(name string, val int64) (int64, error) {
+	oldValue, err := h.counterRepo.GetByName(name)
 	if err != nil {
 		return 0, err
 	}
 	if oldValue != nil {
 		val += oldValue.Value
 	}
-	ctx2, cancel2 := context.WithTimeout(ctx, 5*time.Second)
-	defer cancel2()
-	h.counterRepo.Add(ctx2, dataclass.Metric[int64]{Name: name, Value: val})
+	h.counterRepo.Add(dataclass.Metric[int64]{Name: name, Value: val})
 	return val, nil
 }
 
@@ -154,9 +141,7 @@ func (h *MetricHandler) GetValue(w http.ResponseWriter, r *http.Request) {
 	result := ""
 	switch typeMetric {
 	case "gauge":
-		ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
-		defer cancel()
-		met, err := h.gaugeRepo.GetByName(ctx, nameMetric)
+		met, err := h.gaugeRepo.GetByName(nameMetric)
 		if err != nil {
 			log.Print(err)
 		}
@@ -166,9 +151,7 @@ func (h *MetricHandler) GetValue(w http.ResponseWriter, r *http.Request) {
 		}
 		result = fmt.Sprintf("%.3f", met.Value)
 	case "counter":
-		ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
-		defer cancel()
-		met, err := h.counterRepo.GetByName(ctx, nameMetric)
+		met, err := h.counterRepo.GetByName(nameMetric)
 		if err != nil {
 			log.Print(err)
 		}
@@ -203,9 +186,7 @@ func (h *MetricHandler) GetJSONValue(w http.ResponseWriter, r *http.Request) {
 	}
 	switch model.MType {
 	case "gauge":
-		ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
-		defer cancel()
-		met, err := h.gaugeRepo.GetByName(ctx, model.ID)
+		met, err := h.gaugeRepo.GetByName(model.ID)
 		if err != nil {
 			log.Print(err)
 		}
@@ -215,9 +196,7 @@ func (h *MetricHandler) GetJSONValue(w http.ResponseWriter, r *http.Request) {
 		}
 		model.Value = &met.Value
 	case "counter":
-		ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
-		defer cancel()
-		met, err := h.counterRepo.GetByName(ctx, model.ID)
+		met, err := h.counterRepo.GetByName(model.ID)
 		if err != nil {
 			log.Print(err)
 		}
@@ -235,15 +214,11 @@ func (h *MetricHandler) GetJSONValue(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *MetricHandler) Get(w http.ResponseWriter, r *http.Request) {
-	ctx1, cancel1 := context.WithTimeout(r.Context(), 5*time.Second)
-	defer cancel1()
-	counterList, err := h.counterRepo.GetAll(ctx1)
+	counterList, err := h.counterRepo.GetAll()
 	if err != nil {
 		log.Fatal(err)
 	}
-	ctx2, cancel2 := context.WithTimeout(r.Context(), 5*time.Second)
-	defer cancel2()
-	gaugeList, err := h.gaugeRepo.GetAll(ctx2)
+	gaugeList, err := h.gaugeRepo.GetAll()
 	if err != nil {
 		log.Fatal(err)
 	}

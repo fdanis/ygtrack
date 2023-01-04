@@ -16,10 +16,10 @@ func Routes(app *config.AppConfig, db *sql.DB) http.Handler {
 	mux.Post("/update/{type}/{name}/{value}", metricHandler.Update)
 	mux.Post("/update/", metricHandler.UpdateJSON)
 	mux.Post("/update", metricHandler.UpdateJSON)
-	mux.Get("/ping", metricHandler.Ping)
 	mux.Post("/value/", metricHandler.GetJSONValue)
 	mux.Post("/value", metricHandler.GetJSONValue)
 	mux.Get("/value/{type}/{name}", metricHandler.GetValue)
 	mux.Get("/", metricHandler.Get)
+	mux.Get("/ping", metricHandler.Ping)
 	return mux
 }

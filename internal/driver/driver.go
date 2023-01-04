@@ -8,17 +8,11 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
-type DB struct {
-	SQL *sql.DB
-}
-
-var dbConn = &DB{}
-
 const maxOpenConn = 15
 const maxIdleConn = 15
 const maxDbLifeTime = 5 * time.Minute
 
-func ConnectSQL(dsn string) (*DB, error) {
+func ConnectSQL(dsn string) (*sql.DB, error) {
 	d, err := NewDataBase(dsn)
 	if err != nil {
 		panic(err)
@@ -28,7 +22,6 @@ func ConnectSQL(dsn string) (*DB, error) {
 	d.SetMaxIdleConns(maxIdleConn)
 	d.SetConnMaxLifetime(maxDbLifeTime)
 
-	dbConn.SQL = d
 	err = TestDB(d)
 	if err != nil {
 		return nil, err
@@ -39,7 +32,7 @@ func ConnectSQL(dsn string) (*DB, error) {
 		return nil, err
 	}
 
-	return dbConn, nil
+	return d, nil
 }
 
 func CreateTabels(d *sql.DB) error {

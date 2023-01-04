@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 
 	"flag"
 	"log"
@@ -26,7 +27,7 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	var db *driver.DB
+	var db *sql.DB
 	if app.Parameters.ConnectionString != "" {
 		db, err = driver.ConnectSQL(app.Parameters.ConnectionString)
 		if err != nil {
@@ -46,8 +47,8 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	if db != nil {
-		app.CounterRepository = pgxmetricrepository.NewCountRepository(db.SQL)
-		app.GaugeRepository = pgxmetricrepository.NewGougeRepository(db.SQL)
+		app.CounterRepository = pgxmetricrepository.NewCountRepository(db)
+		app.GaugeRepository = pgxmetricrepository.NewGougeRepository(db)
 	} else {
 		app.CounterRepository = metricrepository.NewMetricRepository[int64]()
 		app.GaugeRepository = metricrepository.NewMetricRepository[float64]()
@@ -62,7 +63,7 @@ func main() {
 	}
 	server := &http.Server{
 		Addr:    app.Parameters.Address,
-		Handler: server.Routes(&app, db.SQL),
+		Handler: server.Routes(&app, db),
 	}
 	log.Println("server started")
 	err = server.ListenAndServe()
@@ -71,7 +72,7 @@ func main() {
 	}
 
 	if db != nil {
-		db.SQL.Close()
+		db.Close()
 	}
 	log.Println("server stoped")
 }

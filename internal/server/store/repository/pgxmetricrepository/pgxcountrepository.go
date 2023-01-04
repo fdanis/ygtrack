@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"time"
 
 	"github.com/fdanis/ygtrack/internal/server/store/dataclass"
 	"github.com/fdanis/ygtrack/internal/server/store/repository"
@@ -17,9 +18,11 @@ func NewCountRepository(d *sql.DB) repository.MetricRepository[int64] {
 	return pgxCountRepository{db: d}
 }
 
-func (r pgxCountRepository) GetAll(ctx context.Context) ([]dataclass.Metric[int64], error) {
+func (r pgxCountRepository) GetAll() ([]dataclass.Metric[int64], error) {
 	res := make([]dataclass.Metric[int64], 0, 1)
 
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 	row, err := r.db.QueryContext(ctx, `	
 	with last as 
 		(select 
@@ -52,7 +55,10 @@ func (r pgxCountRepository) GetAll(ctx context.Context) ([]dataclass.Metric[int6
 	return res, nil
 }
 
-func (r pgxCountRepository) GetByName(ctx context.Context, name string) (*dataclass.Metric[int64], error) {
+func (r pgxCountRepository) GetByName(name string) (*dataclass.Metric[int64], error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
 	row := r.db.QueryRowContext(ctx, "SELECT id, val FROM public.countmetric where id=$1 order by created desc limit 1", name)
 	var val int64
 	var n string
@@ -65,7 +71,9 @@ func (r pgxCountRepository) GetByName(ctx context.Context, name string) (*datacl
 	return &dataclass.Metric[int64]{Name: n, Value: val}, nil
 }
 
-func (r pgxCountRepository) Add(ctx context.Context, data dataclass.Metric[int64]) error {
+func (r pgxCountRepository) Add(data dataclass.Metric[int64]) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 	s, err := r.db.ExecContext(ctx, "insert into public.countmetric (val,id) values ($1,$2)", data.Value, data.Name)
 	if err != nil {
 		return err
