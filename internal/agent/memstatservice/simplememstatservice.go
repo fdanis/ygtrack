@@ -28,12 +28,14 @@ type SimpleMemStatService struct {
 	randomCount     int64
 	send            func(url string, contentType string, data *bytes.Buffer) error
 	lock            sync.RWMutex
+	hashkey         string
 }
 
-func NewSimpleMemStatService() *SimpleMemStatService {
+func NewSimpleMemStatService(hashkey string) *SimpleMemStatService {
 	m := new(SimpleMemStatService)
 	m.send = post
 	m.gaugeDictionary = map[string]float64{}
+	m.hashkey = hashkey
 	return m
 }
 func (m *SimpleMemStatService) Update() {
@@ -100,7 +102,11 @@ func (m *SimpleMemStatService) Send(url string) {
 }
 
 func (m *SimpleMemStatService) httpSendStat(data *models.Metrics, url string) {
-	//url := fmt.Sprintf("%s/%s/%s/%s", host, t, name, val)
+	if m.hashkey != "" {
+		if err := data.RefreshHash(m.hashkey); err != nil {
+			log.Printf("could not refresh hash  %v", err)
+		}
+	}
 	d, err := json.Marshal(data)
 	if err != nil {
 		log.Printf("could marshal %v", err)

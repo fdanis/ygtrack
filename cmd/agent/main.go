@@ -24,7 +24,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	m := memstatservice.NewSimpleMemStatService()
+	m := memstatservice.NewSimpleMemStatService(config.Key)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	go Update(ctx, config.PollInterval, m)

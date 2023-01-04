@@ -20,10 +20,6 @@ type simpleMockHTTPHelper struct {
 	paths map[string]int
 }
 
-func (h *simpleMockHTTPHelper) Get(url string) error {
-	return nil
-}
-
 func (h *simpleMockHTTPHelper) Post(url string, contentType string, data *bytes.Buffer) error {
 	m := models.Metrics{}
 	json.Unmarshal(data.Bytes(), &m)
@@ -58,7 +54,7 @@ func TestSimpleMemStatService_Update(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			res := NewSimpleMemStatService()
+			res := NewSimpleMemStatService("")
 			res.Update()
 			assert.NotEqual(t, float64(res.gaugeDictionary["Alloc"]), 0, "alloc property not valid")
 			assert.Equal(t, res.pollCount, tt.wantPool, "uint property  not valid")
@@ -87,7 +83,7 @@ func TestSimpleMemStatService_Send(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			res := NewSimpleMemStatService()
+			res := NewSimpleMemStatService("")
 			res.send = tt.hhelper.Post
 			res.Update()
 			res.Send(fakeurl)
