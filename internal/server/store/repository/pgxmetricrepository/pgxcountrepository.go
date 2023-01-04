@@ -55,13 +55,14 @@ func (r pgxCountRepository) GetAll(ctx context.Context) ([]dataclass.Metric[int6
 func (r pgxCountRepository) GetByName(ctx context.Context, name string) (*dataclass.Metric[int64], error) {
 	row := r.db.QueryRowContext(ctx, "SELECT id, val FROM public.countmetric where id=$1 order by created desc limit 1", name)
 	var val int64
-	err := row.Scan(&val)
+	var n string
+	err := row.Scan(&n, &val)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	} else if err != nil {
 		return nil, err
 	}
-	return &dataclass.Metric[int64]{Name: "count", Value: val}, nil
+	return &dataclass.Metric[int64]{Name: n, Value: val}, nil
 }
 
 func (r pgxCountRepository) Add(ctx context.Context, data dataclass.Metric[int64]) error {
