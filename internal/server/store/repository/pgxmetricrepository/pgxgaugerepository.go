@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"log"
 	"time"
 
 	"github.com/fdanis/ygtrack/internal/server/store/dataclass"
@@ -11,11 +12,17 @@ import (
 )
 
 type pgxGougeRepository struct {
-	db *sql.DB
+	db         *sql.DB
+	insertStmt *sql.Stmt
 }
 
 func NewGougeRepository(d *sql.DB) repository.MetricRepository[float64] {
-	return pgxGougeRepository{db: d}
+	insertStmt, err := d.PrepareContext(context.TODO(), "insert into public.gaugemetric (id,val) values ($1,$2)")
+	if err != nil {
+		log.Fatal("can not create statement for pgxGougeRepository")
+	}
+
+	return pgxGougeRepository{db: d, insertStmt: insertStmt}
 }
 
 func (r pgxGougeRepository) GetAll() ([]dataclass.Metric[float64], error) {
@@ -57,8 +64,8 @@ func (r pgxGougeRepository) GetAll() ([]dataclass.Metric[float64], error) {
 func (r pgxGougeRepository) GetByName(name string) (*dataclass.Metric[float64], error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	row := r.db.QueryRowContext(ctx, "select id, val FROM public.gaugemetric where id = $1 order by created desc limit 1", name)
 
+	row := r.db.QueryRowContext(ctx, "select id, val FROM public.gaugemetric where id = $1 order by created desc limit 1", name)
 	m := dataclass.Metric[float64]{}
 	err := row.Scan(&m.Name, &m.Value)
 	if err == sql.ErrNoRows {
@@ -72,7 +79,8 @@ func (r pgxGougeRepository) GetByName(name string) (*dataclass.Metric[float64], 
 func (r pgxGougeRepository) Add(data dataclass.Metric[float64]) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	s, err := r.db.ExecContext(ctx, "insert into public.gaugemetric (id,val) values ($1,$2)", data.Name, data.Value)
+	s, err := r.insertStmt.ExecContext(ctx, data.Name, data.Value)
+	//s, err := r.db.ExecContext(ctx, "insert into public.gaugemetric (id,val) values ($1,$2)", data.Name, data.Value)
 	if err != nil {
 		return err
 	}
@@ -82,6 +90,19 @@ func (r pgxGougeRepository) Add(data dataclass.Metric[float64]) error {
 	}
 	if i == 0 {
 		return errors.New("metric was not save")
+	}
+	return nil
+}
+
+func (r pgxGougeRepository) AddBatch(tx *sql.Tx, data []dataclass.Metric[float64]) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	txStmt := tx.StmtContext(ctx, r.insertStmt)
+	for _, v := range data {
+		if _, err := txStmt.ExecContext(ctx, v.Name, v.Value); err != nil {
+			return err
+		}
 	}
 	return nil
 }

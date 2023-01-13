@@ -10,7 +10,7 @@ import (
 
 const maxOpenConn = 15
 const maxIdleConn = 15
-const maxDbLifeTime = 5 * time.Minute
+const maxDBLifeTime = 5 * time.Minute
 
 func ConnectSQL(dsn string) (*sql.DB, error) {
 	d, err := NewDataBase(dsn)
@@ -20,7 +20,7 @@ func ConnectSQL(dsn string) (*sql.DB, error) {
 
 	d.SetMaxOpenConns(maxOpenConn)
 	d.SetMaxIdleConns(maxIdleConn)
-	d.SetConnMaxLifetime(maxDbLifeTime)
+	d.SetConnMaxLifetime(maxDBLifeTime)
 
 	err = TestDB(d)
 	if err != nil {

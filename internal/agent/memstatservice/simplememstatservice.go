@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"math/big"
 	"net/http"
@@ -12,6 +13,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/fdanis/ygtrack/internal/helpers"
 	"github.com/fdanis/ygtrack/internal/server/models"
 )
 
@@ -26,7 +28,7 @@ type SimpleMemStatService struct {
 	gaugeDictionary map[string]float64
 	pollCount       int64
 	randomCount     int64
-	send            func(url string, contentType string, data *bytes.Buffer) error
+	send            func(url string, header map[string]string, data *bytes.Buffer) error
 	lock            sync.RWMutex
 	hashkey         string
 }
@@ -101,6 +103,46 @@ func (m *SimpleMemStatService) Send(url string) {
 	m.httpSendStat(&models.Metrics{ID: randomCount, MType: gauge, Value: &randomCountValue}, url)
 }
 
+func (m *SimpleMemStatService) SendBatch(url string) {
+	fmt.Printf("send batch metrics %s \n", time.Now().Format("15:04:05"))
+	m.lock.RLock()
+	batch := make([]*models.Metrics, 0, len(m.gaugeDictionary)+2)
+	for key, val := range m.gaugeDictionary {
+		batch = append(batch, &models.Metrics{ID: key, MType: gauge, Value: &val})
+	}
+	var poolCountValue = m.pollCount
+	var randomCountValue = float64(m.randomCount)
+	batch = append(batch, &models.Metrics{ID: randomCount, MType: gauge, Value: &randomCountValue})
+	batch = append(batch, &models.Metrics{ID: pollCount, MType: counter, Delta: &poolCountValue})
+	m.lock.RUnlock()
+
+	m.httpSendBatch(batch, url)
+}
+
+func (m *SimpleMemStatService) httpSendBatch(data []*models.Metrics, url string) {
+	d, err := json.Marshal(data)
+	if err != nil {
+		log.Printf("could marshal %v", err)
+		return
+	}
+
+	var buf bytes.Buffer
+	w := io.Writer(&buf)
+	gz := helpers.GetPool().GetWriter(w)
+	defer helpers.GetPool().PutWriter(gz)
+	_, err = gz.Write(d)
+	if err != nil {
+		log.Println(err)
+	}
+	gz.Flush()
+
+	err = m.send(url, map[string]string{"Content-Type": "application/json", "Content-Encoding": "gzip"}, &buf)
+	//	err = m.send(url, "application/json", bytes.NewBuffer(d))
+	if err != nil {
+		log.Printf("could not send metric %v %v to url %s", data, err, url)
+	}
+}
+
 func (m *SimpleMemStatService) httpSendStat(data *models.Metrics, url string) {
 	if m.hashkey != "" {
 		if err := data.RefreshHash(m.hashkey); err != nil {
@@ -111,17 +153,27 @@ func (m *SimpleMemStatService) httpSendStat(data *models.Metrics, url string) {
 	if err != nil {
 		log.Printf("could marshal %v", err)
 	}
-	err = m.send(url, "application/json", bytes.NewBuffer(d))
+	err = m.send(url, map[string]string{"Content-Type": "application/json"}, bytes.NewBuffer(d))
 	if err != nil {
 		log.Printf("could not send metric %v %v", data, err)
 	}
 }
 
-func post(url string, contentType string, data *bytes.Buffer) error {
-	res, err := http.Post(url, contentType, data)
+func post(url string, header map[string]string, data *bytes.Buffer) error {
+	r, err := http.NewRequest("POST", url, data)
 	if err != nil {
 		return err
 	}
+	for k, v := range header {
+		r.Header.Add(k, v)
+	}
+
+	client := &http.Client{}
+	res, err := client.Do(r)
+	if err != nil {
+		return err
+	}
+
 	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {
 		return fmt.Errorf("got wrong http status (%d)", res.StatusCode)

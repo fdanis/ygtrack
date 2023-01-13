@@ -45,12 +45,13 @@ func validateContentTypeIsJSON(w http.ResponseWriter, r *http.Request) bool {
 
 func decodeJSONBody(b io.ReadCloser, contentEncoding string, dst interface{}) error {
 	if contentEncoding != "" {
-		if strings.Contains(strings.ToLower(contentEncoding), "gzip)") {
+		if strings.Contains(strings.ToLower(contentEncoding), "gzip") {
 			gz := helpers.GetPool().GetReader(b)
 			defer helpers.GetPool().PutReader(gz)
 			return decodeJSONBody(gz, "", dst)
 		}
 	}
+
 	dec := json.NewDecoder(b)
 	dec.DisallowUnknownFields()
 	err := dec.Decode(&dst)
@@ -82,10 +83,10 @@ func decodeJSONBody(b io.ReadCloser, contentEncoding string, dst interface{}) er
 		}
 	}
 
-	err = dec.Decode(&struct{}{})
-	if err != io.EOF {
-		msg := "Request body must only contain a single JSON object"
-		return &RequestError{status: http.StatusBadRequest, msg: msg}
-	}
+	// err = dec.Decode(&struct{}{})
+	// if err != io.EOF {
+	// 	msg := "Request body must only contain a single JSON object"
+	// 	return &RequestError{status: http.StatusBadRequest, msg: msg}
+	// }
 	return nil
 }

@@ -114,11 +114,62 @@ func (h *MetricHandler) UpdateJSON(w http.ResponseWriter, r *http.Request) {
 		err := h.gaugeRepo.Add(dataclass.Metric[float64]{Name: model.ID, Value: *model.Value})
 		if err != nil {
 			log.Println(err)
-			fmt.Println(err)
 			http.Error(w, "Server error", http.StatusInternalServerError)
 			return
 		}
 	}
+	h.WriteToFileIfNeeded()
+	responseJSON(w, &model)
+}
+
+func (h *MetricHandler) UpdateBatch(w http.ResponseWriter, r *http.Request) {
+	if !validateContentTypeIsJSON(w, r) {
+		return
+	}
+	model := []models.Metrics{}
+	if err := decodeJSONBody(r.Body, r.Header.Get("Content-Encoding"), &model); err != nil {
+		var mr *RequestError
+		if errors.As(err, &mr) {
+			http.Error(w, mr.msg, mr.status)
+		} else {
+			log.Println(err.Error())
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		}
+		return
+	}
+	gaugeList := []dataclass.Metric[float64]{}
+	counterList := []dataclass.Metric[int64]{}
+	for _, val := range model {
+		if val.MType == "counter" {
+			counterList = append(counterList, dataclass.Metric[int64]{Name: val.ID, Value: *val.Delta})
+		} else if val.MType == "gauge" {
+			gaugeList = append(gaugeList, dataclass.Metric[float64]{Name: val.ID, Value: *val.Value})
+		} else {
+			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+			return
+		}
+	}
+
+	tx, err := h.db.Begin()
+	if err != nil {
+		log.Println(err)
+		http.Error(w, "Server error", http.StatusInternalServerError)
+	}
+	defer tx.Rollback()
+	err = h.gaugeRepo.AddBatch(tx, gaugeList)
+	if err != nil {
+		log.Println(err.Error())
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+	h.counterRepo.AddBatch(tx, counterList)
+	if err != nil {
+		log.Println(err.Error())
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+	tx.Commit()
+
 	h.WriteToFileIfNeeded()
 	responseJSON(w, &model)
 }
@@ -238,9 +289,7 @@ func (h *MetricHandler) Ping(w http.ResponseWriter, r *http.Request) {
 	err := h.db.Ping()
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
 	}
-	return
 }
 
 func (h *MetricHandler) WriteToFileIfNeeded() {

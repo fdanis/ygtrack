@@ -65,7 +65,7 @@ func main() {
 		Addr:    app.Parameters.Address,
 		Handler: server.Routes(&app, db),
 	}
-	log.Println("server started")
+	log.Printf("server started at %s\n", app.Parameters.Address)
 	err = server.ListenAndServe()
 	if err != nil {
 		log.Fatal(err)

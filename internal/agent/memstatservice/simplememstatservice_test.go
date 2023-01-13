@@ -20,7 +20,7 @@ type simpleMockHTTPHelper struct {
 	paths map[string]int
 }
 
-func (h *simpleMockHTTPHelper) Post(url string, contentType string, data *bytes.Buffer) error {
+func (h *simpleMockHTTPHelper) Post(url string, header map[string]string, data *bytes.Buffer) error {
 	m := models.Metrics{}
 	json.Unmarshal(data.Bytes(), &m)
 	formatedURL := ""

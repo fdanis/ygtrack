@@ -1,7 +1,9 @@
 package metricrepository
 
 import (
+	"database/sql"
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/fdanis/ygtrack/internal/constraints"
@@ -44,4 +46,8 @@ func (r MetricRepository[T]) Add(data dataclass.Metric[T]) error {
 	}
 	(*r.Datastorage)[strings.ToLower(data.Name)] = data
 	return nil
+}
+
+func (r MetricRepository[T]) AddBatch(tx *sql.Tx, data []dataclass.Metric[T]) error {
+	return fmt.Errorf("method not implemented")
 }
