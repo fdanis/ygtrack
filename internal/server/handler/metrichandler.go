@@ -170,7 +170,7 @@ func (h *MetricHandler) UpdateBatch(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
-	h.counterRepo.AddBatch(tx, counterList)
+	err = h.counterRepo.AddBatch(tx, counterList)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
