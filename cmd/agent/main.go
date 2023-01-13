@@ -57,8 +57,8 @@ func Send(ctx context.Context, sendInterval time.Duration, host string, service 
 	for {
 		select {
 		case <-t.C:
-			//service.Send("http://" + strings.TrimRight(host, "/") + "/update")
-			service.SendBatch("http://" + strings.TrimRight(host, "/") + "/updates/")
+			service.Send("http://" + strings.TrimRight(host, "/") + "/update")
+			//service.SendBatch("http://" + strings.TrimRight(host, "/") + "/updates/")
 		case <-ctx.Done():
 			{
 				fmt.Println("send ticker stoped")
