@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"strings"
 
@@ -61,22 +62,28 @@ func decodeJSONBody(b io.ReadCloser, contentEncoding string, dst interface{}) er
 		switch {
 		case errors.As(err, &syntaxError):
 			msg := fmt.Sprintf("Request body contains badly-formed JSON (at position %d)", syntaxError.Offset)
+			log.Println(msg)
 			return &RequestError{status: http.StatusBadRequest, msg: msg}
 		case errors.Is(err, io.ErrUnexpectedEOF):
 			msg := "Request body contains badly-formed JSON"
+			log.Println(msg)
 			return &RequestError{status: http.StatusBadRequest, msg: msg}
 		case errors.As(err, &unmarshalTypeError):
 			msg := fmt.Sprintf("Request body contains an invalid value for the %q field (at position %d)", unmarshalTypeError.Field, unmarshalTypeError.Offset)
+			log.Println(msg)
 			return &RequestError{status: http.StatusBadRequest, msg: msg}
 		case strings.HasPrefix(err.Error(), "json: unknown field "):
 			fieldName := strings.TrimPrefix(err.Error(), "json: unknown field ")
 			msg := fmt.Sprintf("Request body contains unknown field %s", fieldName)
+			log.Println(msg)
 			return &RequestError{status: http.StatusBadRequest, msg: msg}
 		case errors.Is(err, io.EOF):
 			msg := "Request body must not be empty"
+			log.Println(msg)
 			return &RequestError{status: http.StatusBadRequest, msg: msg}
 		case err.Error() == "http: request body too large":
 			msg := "Request body must not be larger than 1MB"
+			log.Println(msg)
 			return &RequestError{status: http.StatusRequestEntityTooLarge, msg: msg}
 		default:
 			return err
