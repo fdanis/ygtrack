@@ -146,6 +146,7 @@ func (h *MetricHandler) UpdateBatch(w http.ResponseWriter, r *http.Request) {
 			if _, ok := countVal[val.ID]; !ok {
 				oldValue, err := h.counterRepo.GetByName(val.ID)
 				if err != nil {
+					log.Println(err)
 					http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 					return
 				}

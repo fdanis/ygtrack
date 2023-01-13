@@ -17,11 +17,10 @@ type pgxCountRepository struct {
 }
 
 func NewCountRepository(d *sql.DB) repository.MetricRepository[int64] {
-	insertStmt, err := d.PrepareContext(context.TODO(), "insert into public.countmetric (id,val) values ($1,$2)")
+	insertStmt, err := d.PrepareContext(context.TODO(), "insert into public.countmetric (name,val) values ($1,$2)")
 	if err != nil {
 		log.Fatal("can not create statement for pgxCountRepository")
 	}
-
 	return pgxCountRepository{db: d, insertStmt: insertStmt}
 }
 
@@ -32,15 +31,15 @@ func (r pgxCountRepository) GetAll() ([]dataclass.Metric[int64], error) {
 	row, err := r.db.QueryContext(ctx, `	
 	with last as 
 		(select 
-			id, 
-			max(k) k 
+			name, 
+			max(id) id 
 		 FROM public.countmetric 
-		 group by id)
+		 group by name)
 	select 
-		g.id,
+		g.name,
 		g.val 
 	from public.countmetric g 
-	where exists (select 1 from last where last.id = g.id and last.k = g.k limit 1);`)
+	where exists (select 1 from last where last.id = g.id and last.name = g.name limit 1);`)
 	if err != nil {
 		return nil, err
 	}
@@ -64,7 +63,7 @@ func (r pgxCountRepository) GetAll() ([]dataclass.Metric[int64], error) {
 func (r pgxCountRepository) GetByName(name string) (*dataclass.Metric[int64], error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	row := r.db.QueryRowContext(ctx, "SELECT id, val FROM public.countmetric where id=$1 order by created desc limit 1", name)
+	row := r.db.QueryRowContext(ctx, "SELECT name, val FROM public.countmetric where name=$1 order by id desc limit 1", name)
 	var val int64
 	var n string
 	err := row.Scan(&n, &val)

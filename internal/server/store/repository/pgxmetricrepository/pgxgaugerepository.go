@@ -17,11 +17,10 @@ type pgxGougeRepository struct {
 }
 
 func NewGougeRepository(d *sql.DB) repository.MetricRepository[float64] {
-	insertStmt, err := d.PrepareContext(context.TODO(), "insert into public.gaugemetric (id,val) values ($1,$2)")
+	insertStmt, err := d.PrepareContext(context.TODO(), "insert into public.gaugemetric (name,val) values ($1,$2)")
 	if err != nil {
 		log.Fatal("can not create statement for pgxGougeRepository")
 	}
-
 	return pgxGougeRepository{db: d, insertStmt: insertStmt}
 }
 
@@ -32,15 +31,15 @@ func (r pgxGougeRepository) GetAll() ([]dataclass.Metric[float64], error) {
 	row, err := r.db.QueryContext(ctx, `	
 	with last as 
 		(select 
-			id, 
-			max(k) k 
+			name, 
+			max(id) id 
 		 FROM public.gaugemetric 
-		 group by id)
+		 group by name)
 	select 
-		g.id,
+		g.name,
 		g.val 
 	from public.gaugemetric g 
-	where exists (select 1 from last where last.id = g.id and last.k = g.k limit 1);`)
+	where exists (select 1 from last where last.id = g.id and last.name = g.name limit 1);`)
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +64,7 @@ func (r pgxGougeRepository) GetByName(name string) (*dataclass.Metric[float64], 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	row := r.db.QueryRowContext(ctx, "select id, val FROM public.gaugemetric where id = $1 order by created desc limit 1", name)
+	row := r.db.QueryRowContext(ctx, "select name, val FROM public.gaugemetric where name = $1 order by id desc limit 1", name)
 	m := dataclass.Metric[float64]{}
 	err := row.Scan(&m.Name, &m.Value)
 	if err == sql.ErrNoRows {
