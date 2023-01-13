@@ -140,13 +140,24 @@ func (h *MetricHandler) UpdateBatch(w http.ResponseWriter, r *http.Request) {
 	gaugeList := []dataclass.Metric[float64]{}
 	counterList := []dataclass.Metric[int64]{}
 	//dblGauge := map[string]byte{}
-	//dblCount := map[string]byte{}
+	countVal := map[string]int64{}
 	for _, val := range model {
 		if val.MType == "counter" {
-			//		if _, ok := dblCount[val.ID]; !ok {
-			counterList = append(counterList, dataclass.Metric[int64]{Name: val.ID, Value: *val.Delta})
-			//				dblCount[val.ID] = 0
-			//			}
+			if _, ok := countVal[val.ID]; !ok {
+				oldValue, err := h.counterRepo.GetByName(val.ID)
+				if err != nil {
+					http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+					return
+				}
+				if oldValue != nil {
+					countVal[val.ID] = oldValue.Value
+				} else {
+					countVal[val.ID] = 0
+				}
+			}
+			countVal[val.ID] += *val.Delta
+			counterList = append(counterList, dataclass.Metric[int64]{Name: val.ID, Value: countVal[val.ID]})
+
 		} else if val.MType == "gauge" {
 			//			if _, ok := dblGauge[val.ID]; !ok {
 			gaugeList = append(gaugeList, dataclass.Metric[float64]{Name: val.ID, Value: *val.Value})
