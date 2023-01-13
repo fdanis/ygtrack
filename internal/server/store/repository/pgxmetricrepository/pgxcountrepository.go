@@ -17,7 +17,10 @@ type pgxCountRepository struct {
 }
 
 func NewCountRepository(d *sql.DB) repository.MetricRepository[int64] {
-	insertStmt, err := d.PrepareContext(context.TODO(), "insert into public.countmetric (id,val) values ($1,$2)")
+	insertStmt, err := d.PrepareContext(context.TODO(), `	
+	insert into public.countmetric (id,val)  
+       select id, max(val)+$2 from public.countmetric where id= $1 group by id);	
+	`)
 	if err != nil {
 		log.Fatal("can not create statement for pgxCountRepository")
 	}
@@ -80,7 +83,7 @@ func (r pgxCountRepository) GetByName(name string) (*dataclass.Metric[int64], er
 func (r pgxCountRepository) Add(data dataclass.Metric[int64]) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	s, err := r.insertStmt.ExecContext(ctx, data.Name, data.Value)
+	s, err := r.db.ExecContext(ctx, "insert into public.countmetric (id,val) values ($1,$2)", data.Name, data.Value)
 	if err != nil {
 		return err
 	}
