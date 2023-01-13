@@ -33,14 +33,14 @@ func (r pgxCountRepository) GetAll() ([]dataclass.Metric[int64], error) {
 	with last as 
 		(select 
 			id, 
-			max(created) created 
+			max(k) k 
 		 FROM public.countmetric 
 		 group by id)
 	select 
 		g.id,
 		g.val 
 	from public.countmetric g 
-	where exists (select 1 from last where last.id = g.id and last.created = g.created limit 1);`)
+	where exists (select 1 from last where last.id = g.id and last.k = g.k limit 1);`)
 	if err != nil {
 		return nil, err
 	}
