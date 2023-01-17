@@ -24,7 +24,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	m := memstatservice.NewSimpleMemStatService(config.Key)
+	m := memstatservice.NewMemStatService(config.Key)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	go Update(ctx, config.PollInterval, m)
@@ -37,7 +37,7 @@ func main() {
 	fmt.Println("exit")
 }
 
-func Update(ctx context.Context, poolInterval time.Duration, service *memstatservice.SimpleMemStatService) {
+func Update(ctx context.Context, poolInterval time.Duration, service *memstatservice.MemStatService) {
 	t := time.NewTicker(poolInterval)
 	for {
 		select {
@@ -52,13 +52,12 @@ func Update(ctx context.Context, poolInterval time.Duration, service *memstatser
 		}
 	}
 }
-func Send(ctx context.Context, sendInterval time.Duration, host string, service *memstatservice.SimpleMemStatService) {
+func Send(ctx context.Context, sendInterval time.Duration, host string, service *memstatservice.MemStatService) {
 	t := time.NewTicker(sendInterval)
 	for {
 		select {
 		case <-t.C:
 			service.Send("http://" + strings.TrimRight(host, "/") + "/update")
-			//service.SendBatch("http://" + strings.TrimRight(host, "/") + "/updates/")
 		case <-ctx.Done():
 			{
 				fmt.Println("send ticker stoped")

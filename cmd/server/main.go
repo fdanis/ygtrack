@@ -14,6 +14,8 @@ import (
 	"github.com/fdanis/ygtrack/internal/server/render"
 	"github.com/fdanis/ygtrack/internal/server/store/repository/metricrepository"
 	"github.com/fdanis/ygtrack/internal/server/store/repository/pgxmetricrepository"
+
+	_ "github.com/golang-migrate/migrate/source/file"
 )
 
 func main() {
@@ -33,6 +35,7 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
+
 	}
 
 	//initialize html template

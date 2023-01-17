@@ -24,7 +24,7 @@ const (
 	randomCount = "RandomValue"
 )
 
-type SimpleMemStatService struct {
+type MemStatService struct {
 	gaugeDictionary map[string]float64
 	pollCount       int64
 	randomCount     int64
@@ -33,14 +33,14 @@ type SimpleMemStatService struct {
 	hashkey         string
 }
 
-func NewSimpleMemStatService(hashkey string) *SimpleMemStatService {
-	m := new(SimpleMemStatService)
+func NewMemStatService(hashkey string) *MemStatService {
+	m := new(MemStatService)
 	m.send = post
 	m.gaugeDictionary = map[string]float64{}
 	m.hashkey = hashkey
 	return m
 }
-func (m *SimpleMemStatService) Update() {
+func (m *MemStatService) Update() {
 	fmt.Printf("update metrics %s \n", time.Now().Format("15:04:05"))
 	m.lock.Lock()
 	defer m.lock.Unlock()
@@ -83,7 +83,7 @@ func (m *SimpleMemStatService) Update() {
 	m.randomCount = randomValue.Int64()
 }
 
-func (m *SimpleMemStatService) Send(url string) {
+func (m *MemStatService) Send(url string) {
 	fmt.Printf("send metrics %s \n", time.Now().Format("15:04:05"))
 	copymap := make(map[string]float64, len(m.gaugeDictionary))
 	m.lock.RLock()
@@ -103,7 +103,7 @@ func (m *SimpleMemStatService) Send(url string) {
 	m.httpSendStat(&models.Metrics{ID: randomCount, MType: gauge, Value: &randomCountValue}, url)
 }
 
-func (m *SimpleMemStatService) SendBatch(url string) {
+func (m *MemStatService) SendBatch(url string) {
 	fmt.Printf("send batch metrics %s \n", time.Now().Format("15:04:05"))
 	m.lock.RLock()
 	batch := make([]*models.Metrics, 0, len(m.gaugeDictionary)+2)
@@ -119,7 +119,7 @@ func (m *SimpleMemStatService) SendBatch(url string) {
 	m.httpSendBatch(batch, url)
 }
 
-func (m *SimpleMemStatService) httpSendBatch(data []*models.Metrics, url string) {
+func (m *MemStatService) httpSendBatch(data []*models.Metrics, url string) {
 	d, err := json.Marshal(data)
 	if err != nil {
 		log.Printf("could marshal %v", err)
@@ -143,7 +143,7 @@ func (m *SimpleMemStatService) httpSendBatch(data []*models.Metrics, url string)
 	}
 }
 
-func (m *SimpleMemStatService) httpSendStat(data *models.Metrics, url string) {
+func (m *MemStatService) httpSendStat(data *models.Metrics, url string) {
 	if m.hashkey != "" {
 		if err := data.RefreshHash(m.hashkey); err != nil {
 			log.Printf("could not refresh hash  %v", err)
