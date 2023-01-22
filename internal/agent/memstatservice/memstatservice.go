@@ -214,10 +214,12 @@ func (m *MemStatService) getMetrics() []*models.Metrics {
 	m.lock.RLock()
 	allmetrics := make([]*models.Metrics, 0, len(m.gaugeDictionary)+2)
 	for key, val := range m.gaugeDictionary {
-		allmetrics = append(allmetrics, &models.Metrics{ID: key, MType: gauge, Value: &val})
+		v := val
+		allmetrics = append(allmetrics, &models.Metrics{ID: key, MType: gauge, Value: &v})
 	}
 	for key, val := range m.countDictionary {
-		allmetrics = append(allmetrics, &models.Metrics{ID: key, MType: counter, Delta: &val})
+		v := val
+		allmetrics = append(allmetrics, &models.Metrics{ID: key, MType: counter, Delta: &v})
 	}
 	m.lock.RUnlock()
 	return allmetrics
