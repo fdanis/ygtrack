@@ -14,7 +14,7 @@ type HashGenerator struct {
 }
 
 func (hg *HashGenerator) Do() error {
-	hash, err := UpdateHash(hg.Metric, hg.Key)
+	hash, err := GetHash(fmt.Sprint(hg.Metric), hg.Key)
 	if err != nil {
 		return err
 	}
@@ -22,11 +22,11 @@ func (hg *HashGenerator) Do() error {
 	return nil
 }
 
-func UpdateHash(metric interface{}, key string) (string, error) {
+func GetHash(text string, key string) (string, error) {
 	result := ""
 	if key != "" {
 		h := hmac.New(sha256.New, []byte(key))
-		if _, err := h.Write([]byte(fmt.Sprint(metric))); err != nil {
+		if _, err := h.Write([]byte(text)); err != nil {
 			log.Println("can not get hash")
 			return "", err
 		}

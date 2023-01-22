@@ -54,7 +54,7 @@ func (m *Metrics) SetHash(hash string) {
 	m.Hash = hash
 }
 
-func (m *Metrics) String() string {
+func (m Metrics) String() string {
 	if m.MType == constants.MetricsTypeCounter {
 		return fmt.Sprintf("%s:%s:%d", m.ID, constants.MetricsTypeCounter, *m.Delta)
 	}

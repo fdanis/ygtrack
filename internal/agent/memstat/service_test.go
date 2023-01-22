@@ -1,4 +1,4 @@
-package memstatservice
+package memstat
 
 import (
 	"bytes"
@@ -54,7 +54,7 @@ func TestSimpleMemStatService_Update(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			res := NewMemStatService("")
+			res := NewService("")
 			res.Update()
 			assert.NotEqual(t, float64(res.gaugeDictionary["Alloc"]), 0, "alloc property not valid")
 			assert.Equal(t, tt.wantPool, res.countDictionary[pollCount], "uint property  not valid")
@@ -91,7 +91,7 @@ func TestSimpleMemStatService_Send(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			res := NewMemStatService("")
+			res := NewService("")
 			res.send = tt.hhelper.Post
 			res.gaugeDictionary = tt.values
 			res.Send(fakeurl)

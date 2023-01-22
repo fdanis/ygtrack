@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/fdanis/ygtrack/internal/agent"
-	"github.com/fdanis/ygtrack/internal/agent/memstatservice"
+	"github.com/fdanis/ygtrack/internal/agent/memstat"
 	//"github.com/fdanis/ygtrack/internal/helpers/fakehttphelper"
 )
 
@@ -24,7 +24,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	m := memstatservice.NewMemStatService(config.Key)
+	m := memstat.NewService(config.Key)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	go Update(ctx, config.PollInterval, m)
@@ -38,7 +38,7 @@ func main() {
 	fmt.Println("exit")
 }
 
-func Update(ctx context.Context, poolInterval time.Duration, service *memstatservice.MemStatService) {
+func Update(ctx context.Context, poolInterval time.Duration, service *memstat.Service) {
 	t := time.NewTicker(poolInterval)
 	for {
 		select {
@@ -53,7 +53,7 @@ func Update(ctx context.Context, poolInterval time.Duration, service *memstatser
 		}
 	}
 }
-func UpdateGopsUtil(ctx context.Context, poolInterval time.Duration, service *memstatservice.MemStatService) {
+func UpdateGopsUtil(ctx context.Context, poolInterval time.Duration, service *memstat.Service) {
 	t := time.NewTicker(poolInterval)
 	for {
 		select {
@@ -68,7 +68,7 @@ func UpdateGopsUtil(ctx context.Context, poolInterval time.Duration, service *me
 		}
 	}
 }
-func Send(ctx context.Context, sendInterval time.Duration, host string, service *memstatservice.MemStatService) {
+func Send(ctx context.Context, sendInterval time.Duration, host string, service *memstat.Service) {
 	t := time.NewTicker(sendInterval)
 	for {
 		select {

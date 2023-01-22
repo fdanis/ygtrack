@@ -1,4 +1,4 @@
-package memstatservice
+package memstat
 
 import (
 	"bytes"
@@ -27,7 +27,7 @@ const (
 	randomCount = "RandomValue"
 )
 
-type MemStatService struct {
+type Service struct {
 	gaugeDictionary map[string]float64
 	countDictionary map[string]int64
 	send            func(client *http.Client, url string, header map[string]string, data *bytes.Buffer) error
@@ -37,8 +37,8 @@ type MemStatService struct {
 	workers         int
 }
 
-func NewMemStatService(hashkey string) *MemStatService {
-	m := new(MemStatService)
+func NewService(hashkey string) *Service {
+	m := new(Service)
 	m.send = post
 	m.httpclient = &http.Client{}
 	m.gaugeDictionary = map[string]float64{}
@@ -47,7 +47,7 @@ func NewMemStatService(hashkey string) *MemStatService {
 	m.workers = 10
 	return m
 }
-func (m *MemStatService) Update() {
+func (m *Service) Update() {
 	fmt.Printf("update metrics %s \n", time.Now().Format("15:04:05"))
 	m.lock.Lock()
 	defer m.lock.Unlock()
@@ -91,7 +91,7 @@ func (m *MemStatService) Update() {
 	m.countDictionary[pollCount]++
 }
 
-func (m *MemStatService) UpdateGopsUtil() {
+func (m *Service) UpdateGopsUtil() {
 	fmt.Printf("update gops util metrics %s \n", time.Now().Format("15:04:05"))
 	m.lock.Lock()
 	defer m.lock.Unlock()
@@ -109,7 +109,7 @@ func (m *MemStatService) UpdateGopsUtil() {
 	m.gaugeDictionary["CPUutilization1"] = float64(c)
 }
 
-func (m *MemStatService) Send(url string) {
+func (m *Service) Send(url string) {
 	fmt.Printf("send metrics %s \n", time.Now().Format("15:04:05"))
 	metrics := m.getMetrics()
 
@@ -186,7 +186,7 @@ func (w *SendWorker) Do() error {
 	return nil
 }
 
-func (m *MemStatService) SendBatch(url string) {
+func (m *Service) SendBatch(url string) {
 	metrics := m.getMetrics()
 	d, err := json.Marshal(metrics)
 	if err != nil {
@@ -210,7 +210,7 @@ func (m *MemStatService) SendBatch(url string) {
 	}
 }
 
-func (m *MemStatService) getMetrics() []*models.Metrics {
+func (m *Service) getMetrics() []*models.Metrics {
 	m.lock.RLock()
 	allmetrics := make([]*models.Metrics, 0, len(m.gaugeDictionary)+2)
 	for key, val := range m.gaugeDictionary {

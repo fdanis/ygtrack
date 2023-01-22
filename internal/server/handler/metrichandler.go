@@ -87,7 +87,7 @@ func (h *MetricHandler) UpdateJSON(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if h.hashkey != "" {
-		hash, err := helpers.UpdateHash(&model, h.hashkey)
+		hash, err := helpers.GetHash(fmt.Sprint(model), h.hashkey)
 		if err != nil {
 			log.Printf("Hash generation error: %v", err)
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -282,7 +282,8 @@ func (h *MetricHandler) GetJSONValue(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotImplemented)
 		return
 	}
-	hash, err := helpers.UpdateHash(model, h.hashkey)
+
+	hash, err := helpers.GetHash(fmt.Sprint(model), h.hashkey)
 	if err != nil {
 		log.Println(err)
 	}
