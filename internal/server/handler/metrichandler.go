@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"database/sql"
 	"errors"
 	"fmt"
 	"log"
@@ -8,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/fdanis/ygtrack/internal/server/config"
 	"github.com/fdanis/ygtrack/internal/server/models"
 	"github.com/fdanis/ygtrack/internal/server/render"
 	"github.com/fdanis/ygtrack/internal/server/store/dataclass"
@@ -18,11 +20,22 @@ import (
 type MetricHandler struct {
 	counterRepo repository.MetricRepository[int64]
 	gaugeRepo   repository.MetricRepository[float64]
-	Ch          chan int
+	ch          *chan int
+	hashkey     string
+	db          *sql.DB
 }
 
-func NewMetricHandler(counterRepo repository.MetricRepository[int64], gaugeRepo repository.MetricRepository[float64]) MetricHandler {
-	return MetricHandler{counterRepo: counterRepo, gaugeRepo: gaugeRepo}
+func NewMetricHandler(app *config.AppConfig, db *sql.DB) MetricHandler {
+	result := MetricHandler{
+		counterRepo: app.CounterRepository,
+		gaugeRepo:   app.GaugeRepository,
+		hashkey:     app.Parameters.Key,
+		db:          db,
+	}
+	if app.SaveToFileSync {
+		result.ch = &app.ChForSyncWithFile
+	}
+	return result
 }
 
 func (h *MetricHandler) Update(w http.ResponseWriter, r *http.Request) {
@@ -66,11 +79,23 @@ func (h *MetricHandler) UpdateJSON(w http.ResponseWriter, r *http.Request) {
 		if errors.As(err, &mr) {
 			http.Error(w, mr.msg, mr.status)
 		} else {
-			log.Print(err.Error())
+			log.Println(err.Error())
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		}
 		return
 	}
+
+	if h.hashkey != "" {
+		oldHash := model.Hash
+		if err := model.RefreshHash(h.hashkey); err != nil {
+			log.Printf("Hash generation error: %v", err)
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		}
+		if oldHash != model.Hash {
+			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		}
+	}
+
 	switch model.MType {
 	case "counter":
 		if model.Delta == nil {
@@ -88,12 +113,86 @@ func (h *MetricHandler) UpdateJSON(w http.ResponseWriter, r *http.Request) {
 		}
 		err := h.gaugeRepo.Add(dataclass.Metric[float64]{Name: model.ID, Value: *model.Value})
 		if err != nil {
+			log.Println(err)
 			http.Error(w, "Server error", http.StatusInternalServerError)
 			return
 		}
 	}
 	h.WriteToFileIfNeeded()
 	responseJSON(w, &model)
+}
+
+func (h *MetricHandler) UpdateBatch(w http.ResponseWriter, r *http.Request) {
+	if !validateContentTypeIsJSON(w, r) {
+		return
+	}
+	model := []models.Metrics{}
+	if err := decodeJSONBody(r.Body, r.Header.Get("Content-Encoding"), &model); err != nil {
+		var mr *RequestError
+		if errors.As(err, &mr) {
+			http.Error(w, mr.msg, mr.status)
+		} else {
+			log.Println(err.Error())
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		}
+		return
+	}
+	gaugeList := []dataclass.Metric[float64]{}
+	counterList := []dataclass.Metric[int64]{}
+	//dblGauge := map[string]byte{}
+	countVal := map[string]int64{}
+	for _, val := range model {
+		if val.MType == "counter" {
+			if _, ok := countVal[val.ID]; !ok {
+				oldValue, err := h.counterRepo.GetByName(val.ID)
+				if err != nil {
+					log.Println(err)
+					http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+					return
+				}
+				if oldValue != nil {
+					countVal[val.ID] = oldValue.Value
+				} else {
+					countVal[val.ID] = 0
+				}
+			}
+			countVal[val.ID] += *val.Delta
+			counterList = append(counterList, dataclass.Metric[int64]{Name: val.ID, Value: countVal[val.ID]})
+
+		} else if val.MType == "gauge" {
+			//			if _, ok := dblGauge[val.ID]; !ok {
+			gaugeList = append(gaugeList, dataclass.Metric[float64]{Name: val.ID, Value: *val.Value})
+			//				dblGauge[val.ID] = 0
+			//			}
+		} else {
+			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+			return
+		}
+	}
+
+	tx, err := h.db.Begin()
+	if err != nil {
+		log.Println(err)
+		http.Error(w, "Server error", http.StatusInternalServerError)
+	}
+	defer tx.Rollback()
+	err = h.gaugeRepo.AddBatch(tx, gaugeList)
+	if err != nil {
+		log.Println(err.Error())
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+	err = h.counterRepo.AddBatch(tx, counterList)
+	if err != nil {
+		log.Println(err.Error())
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+	tx.Commit()
+
+	h.WriteToFileIfNeeded()
+	w.WriteHeader(http.StatusOK)
+
 }
 
 func (h *MetricHandler) AddCounter(name string, val int64) (int64, error) {
@@ -182,6 +281,7 @@ func (h *MetricHandler) GetJSONValue(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotImplemented)
 		return
 	}
+	model.RefreshHash(h.hashkey)
 	responseJSON(w, model)
 }
 
@@ -206,8 +306,15 @@ func (h *MetricHandler) Get(w http.ResponseWriter, r *http.Request) {
 	render.Render(w, "home.html", &models.TemplateDate{Data: map[string]any{"metrics": result}})
 }
 
+func (h *MetricHandler) Ping(w http.ResponseWriter, r *http.Request) {
+	err := h.db.Ping()
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+	}
+}
+
 func (h *MetricHandler) WriteToFileIfNeeded() {
-	if h.Ch != nil {
-		h.Ch <- 1
+	if h.ch != nil {
+		*h.ch <- 1
 	}
 }
