@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/fdanis/ygtrack/internal/helpers"
 	"github.com/fdanis/ygtrack/internal/server/config"
 	"github.com/fdanis/ygtrack/internal/server/models"
 	"github.com/fdanis/ygtrack/internal/server/render"
@@ -86,12 +87,12 @@ func (h *MetricHandler) UpdateJSON(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if h.hashkey != "" {
-		oldHash := model.Hash
-		if err := model.RefreshHash(h.hashkey); err != nil {
+		hash, err := helpers.UpdateHash(&model, h.hashkey)
+		if err != nil {
 			log.Printf("Hash generation error: %v", err)
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		}
-		if oldHash != model.Hash {
+		if hash != model.Hash {
 			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		}
 	}
@@ -281,7 +282,11 @@ func (h *MetricHandler) GetJSONValue(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotImplemented)
 		return
 	}
-	model.RefreshHash(h.hashkey)
+	hash, err := helpers.UpdateHash(model, h.hashkey)
+	if err != nil {
+		log.Println(err)
+	}
+	model.Hash = hash
 	responseJSON(w, model)
 }
 

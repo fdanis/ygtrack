@@ -15,6 +15,9 @@ import (
 
 	"github.com/fdanis/ygtrack/internal/helpers"
 	"github.com/fdanis/ygtrack/internal/server/models"
+	"github.com/shirou/gopsutil/v3/cpu"
+	"github.com/shirou/gopsutil/v3/mem"
+	"golang.org/x/sync/errgroup"
 )
 
 const (
@@ -26,18 +29,22 @@ const (
 
 type MemStatService struct {
 	gaugeDictionary map[string]float64
-	pollCount       int64
-	randomCount     int64
-	send            func(url string, header map[string]string, data *bytes.Buffer) error
+	countDictionary map[string]int64
+	send            func(client *http.Client, url string, header map[string]string, data *bytes.Buffer) error
 	lock            sync.RWMutex
 	hashkey         string
+	httpclient      *http.Client
+	workers         int
 }
 
 func NewMemStatService(hashkey string) *MemStatService {
 	m := new(MemStatService)
 	m.send = post
+	m.httpclient = &http.Client{}
 	m.gaugeDictionary = map[string]float64{}
+	m.countDictionary = map[string]int64{pollCount: 0}
 	m.hashkey = hashkey
+	m.workers = 10
 	return m
 }
 func (m *MemStatService) Update() {
@@ -46,6 +53,7 @@ func (m *MemStatService) Update() {
 	defer m.lock.Unlock()
 	memstat := runtime.MemStats{}
 	runtime.ReadMemStats(&memstat)
+
 	m.gaugeDictionary["Alloc"] = float64(memstat.Alloc)
 	m.gaugeDictionary["BuckHashSys"] = float64(memstat.BuckHashSys)
 	m.gaugeDictionary["Frees"] = float64(memstat.Frees)
@@ -74,55 +82,115 @@ func (m *MemStatService) Update() {
 	m.gaugeDictionary["Sys"] = float64(memstat.Sys)
 	m.gaugeDictionary["TotalAlloc"] = float64(memstat.TotalAlloc)
 
-	m.pollCount++
 	maxint := int64(^uint(0) >> 1)
 	randomValue, err := rand.Int(rand.Reader, big.NewInt(maxint))
 	if err != nil {
 		panic(err)
 	}
-	m.randomCount = randomValue.Int64()
+	m.gaugeDictionary[randomCount] = float64(randomValue.Int64())
+	m.countDictionary[pollCount]++
+}
+
+func (m *MemStatService) UpdateGopsUtil() {
+	fmt.Printf("update gops util metrics %s \n", time.Now().Format("15:04:05"))
+	m.lock.Lock()
+	defer m.lock.Unlock()
+	virtual, err := mem.VirtualMemory()
+	if err != nil {
+		log.Println(err)
+	}
+	m.gaugeDictionary["FreeMemory"] = float64(virtual.Free)
+	m.gaugeDictionary["TotalMemory"] = float64(virtual.Total)
+
+	c, err := cpu.Counts(true)
+	if err != nil {
+		log.Println(err)
+	}
+	m.gaugeDictionary["CPUutilization1"] = float64(c)
 }
 
 func (m *MemStatService) Send(url string) {
 	fmt.Printf("send metrics %s \n", time.Now().Format("15:04:05"))
-	copymap := make(map[string]float64, len(m.gaugeDictionary))
-	m.lock.RLock()
-	for key, val := range m.gaugeDictionary {
-		copymap[key] = val
-	}
-	var poolCountValue = m.pollCount
-	var randomCountValue = float64(m.randomCount)
-	m.lock.RUnlock()
+	metrics := m.getMetrics()
 
-	for k, v := range copymap {
-		//use go
-		m.httpSendStat(&models.Metrics{ID: k, MType: gauge, Value: &v}, url)
+	//generate hash
+	if m.hashkey != "" {
+		g := &errgroup.Group{}
+		for _, v := range metrics {
+			gen := helpers.HashGenerator{Metric: v, Key: m.hashkey}
+			g.Go(gen.Do)
+		}
+		err := g.Wait()
+		if err != nil {
+			log.Printf("could not refresh hash  %v", err)
+			//don't send any metrics if exists error
+			return
+		}
 	}
-	//use go
-	m.httpSendStat(&models.Metrics{ID: pollCount, MType: counter, Delta: &poolCountValue}, url)
-	m.httpSendStat(&models.Metrics{ID: randomCount, MType: gauge, Value: &randomCountValue}, url)
+
+	g := errgroup.Group{}
+	recordCh := make(chan *bytes.Buffer)
+	for i := 0; i < m.workers; i++ {
+		w := &SendWorker{
+			ch: recordCh,
+			send: func(data *bytes.Buffer) error {
+				return m.send(m.httpclient, url, map[string]string{"Content-Type": "application/json"}, data)
+			},
+		}
+
+		g.Go(w.Do)
+	}
+
+	w := &MarshalWorker{ch: recordCh, list: metrics}
+	err := w.Do()
+	if err != nil {
+		log.Println(err)
+	}
+	close(recordCh)
+
+	err = g.Wait()
+	if err != nil {
+		log.Println(err)
+	}
+}
+
+type MarshalWorker struct {
+	list []*models.Metrics
+	ch   chan *bytes.Buffer
+}
+
+func (w *MarshalWorker) Do() error {
+	for _, item := range w.list {
+		d, err := json.Marshal(item)
+		if err != nil {
+			log.Printf("could marshal %v", err)
+			return err
+		}
+		w.ch <- bytes.NewBuffer(d)
+	}
+	return nil
+}
+
+type SendWorker struct {
+	ch   chan *bytes.Buffer
+	send func(data *bytes.Buffer) error
+}
+
+func (w *SendWorker) Do() error {
+	for data := range w.ch {
+		err := w.send(data)
+		if err != nil {
+			log.Print(err)
+		}
+	}
+	return nil
 }
 
 func (m *MemStatService) SendBatch(url string) {
-	fmt.Printf("send batch metrics %s \n", time.Now().Format("15:04:05"))
-	m.lock.RLock()
-	batch := make([]*models.Metrics, 0, len(m.gaugeDictionary)+2)
-	for key, val := range m.gaugeDictionary {
-		batch = append(batch, &models.Metrics{ID: key, MType: gauge, Value: &val})
-	}
-	var poolCountValue = m.pollCount
-	var randomCountValue = float64(m.randomCount)
-	batch = append(batch, &models.Metrics{ID: randomCount, MType: gauge, Value: &randomCountValue})
-	batch = append(batch, &models.Metrics{ID: pollCount, MType: counter, Delta: &poolCountValue})
-	m.lock.RUnlock()
-
-	m.httpSendBatch(batch, url)
-}
-
-func (m *MemStatService) httpSendBatch(data []*models.Metrics, url string) {
-	d, err := json.Marshal(data)
+	metrics := m.getMetrics()
+	d, err := json.Marshal(metrics)
 	if err != nil {
-		log.Printf("could marshal %v", err)
+		log.Printf("could not do json.marshal %v", err)
 		return
 	}
 
@@ -136,30 +204,26 @@ func (m *MemStatService) httpSendBatch(data []*models.Metrics, url string) {
 	}
 	gz.Flush()
 
-	err = m.send(url, map[string]string{"Content-Type": "application/json", "Content-Encoding": "gzip"}, &buf)
-	//	err = m.send(url, "application/json", bytes.NewBuffer(d))
+	err = post(m.httpclient, url, map[string]string{"Content-Type": "application/json", "Content-Encoding": "gzip"}, &buf)
 	if err != nil {
-		log.Printf("could not send metric %v %v to url %s", data, err, url)
+		log.Println("can not send batch")
 	}
 }
 
-func (m *MemStatService) httpSendStat(data *models.Metrics, url string) {
-	if m.hashkey != "" {
-		if err := data.RefreshHash(m.hashkey); err != nil {
-			log.Printf("could not refresh hash  %v", err)
-		}
+func (m *MemStatService) getMetrics() []*models.Metrics {
+	m.lock.RLock()
+	allmetrics := make([]*models.Metrics, 0, len(m.gaugeDictionary)+2)
+	for key, val := range m.gaugeDictionary {
+		allmetrics = append(allmetrics, &models.Metrics{ID: key, MType: gauge, Value: &val})
 	}
-	d, err := json.Marshal(data)
-	if err != nil {
-		log.Printf("could marshal %v", err)
+	for key, val := range m.countDictionary {
+		allmetrics = append(allmetrics, &models.Metrics{ID: key, MType: counter, Delta: &val})
 	}
-	err = m.send(url, map[string]string{"Content-Type": "application/json"}, bytes.NewBuffer(d))
-	if err != nil {
-		log.Printf("could not send metric %v %v", data, err)
-	}
+	m.lock.RUnlock()
+	return allmetrics
 }
 
-func post(url string, header map[string]string, data *bytes.Buffer) error {
+func post(client *http.Client, url string, header map[string]string, data *bytes.Buffer) error {
 	r, err := http.NewRequest("POST", url, data)
 	if err != nil {
 		return err
@@ -167,8 +231,6 @@ func post(url string, header map[string]string, data *bytes.Buffer) error {
 	for k, v := range header {
 		r.Header.Add(k, v)
 	}
-
-	client := &http.Client{}
 	res, err := client.Do(r)
 	if err != nil {
 		return err

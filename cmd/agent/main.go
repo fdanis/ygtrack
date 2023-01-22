@@ -28,6 +28,7 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	go Update(ctx, config.PollInterval, m)
+	go UpdateGopsUtil(ctx, config.PollInterval, m)
 	go Send(ctx, config.ReportInterval, config.Address, m)
 
 	sig := make(chan os.Signal, 1)
@@ -43,6 +44,21 @@ func Update(ctx context.Context, poolInterval time.Duration, service *memstatser
 		select {
 		case <-t.C:
 			service.Update()
+		case <-ctx.Done():
+			{
+				fmt.Println("update ticker stoped")
+				t.Stop()
+				return
+			}
+		}
+	}
+}
+func UpdateGopsUtil(ctx context.Context, poolInterval time.Duration, service *memstatservice.MemStatService) {
+	t := time.NewTicker(poolInterval)
+	for {
+		select {
+		case <-t.C:
+			service.UpdateGopsUtil()
 		case <-ctx.Done():
 			{
 				fmt.Println("update ticker stoped")

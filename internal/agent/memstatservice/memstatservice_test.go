@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"runtime"
 	"strings"
 	"testing"
@@ -20,7 +21,7 @@ type simpleMockHTTPHelper struct {
 	paths map[string]int
 }
 
-func (h *simpleMockHTTPHelper) Post(url string, header map[string]string, data *bytes.Buffer) error {
+func (h *simpleMockHTTPHelper) Post(client *http.Client, url string, header map[string]string, data *bytes.Buffer) error {
 	m := models.Metrics{}
 	json.Unmarshal(data.Bytes(), &m)
 	formatedURL := ""
@@ -56,7 +57,7 @@ func TestSimpleMemStatService_Update(t *testing.T) {
 			res := NewMemStatService("")
 			res.Update()
 			assert.NotEqual(t, float64(res.gaugeDictionary["Alloc"]), 0, "alloc property not valid")
-			assert.Equal(t, res.pollCount, tt.wantPool, "uint property  not valid")
+			assert.Equal(t, tt.wantPool, res.countDictionary[pollCount], "uint property  not valid")
 		})
 	}
 }
@@ -65,7 +66,7 @@ func TestSimpleMemStatService_Send(t *testing.T) {
 	tests := []struct { // добавился слайс тестов
 		name      string
 		values    map[string]float64
-		sendCount uint64
+		sendCount int
 		hhelper   simpleMockHTTPHelper
 	}{
 		{
@@ -75,7 +76,7 @@ func TestSimpleMemStatService_Send(t *testing.T) {
 				fakeurl + "/" + gauge + "/":                      0,
 				fakeurl + "/" + counter + "/" + pollCount + "/1": 0,
 			}},
-			sendCount: 3,
+			sendCount: 2,
 		},
 		{
 			name:   "send without gauge",
@@ -84,7 +85,7 @@ func TestSimpleMemStatService_Send(t *testing.T) {
 				fakeurl + "/" + gauge + "/":                      0,
 				fakeurl + "/" + counter + "/" + pollCount + "/1": 0,
 			}},
-			sendCount: 1,
+			sendCount: 0,
 		},
 	}
 
@@ -96,9 +97,9 @@ func TestSimpleMemStatService_Send(t *testing.T) {
 			res.Send(fakeurl)
 			for k, v := range tt.hhelper.paths {
 				if strings.Contains(k, gauge) {
-					assert.Equal(t, v, tt.sendCount, fmt.Sprintf("%s should be called %d", k, tt.sendCount))
+					assert.Equal(t, tt.sendCount, v, fmt.Sprintf("%s should be called %d", k, tt.sendCount))
 				} else {
-					assert.Equal(t, v, 1, k+" should be called once")
+					assert.Equal(t, 0, v, k+" should not be called")
 				}
 			}
 		})
