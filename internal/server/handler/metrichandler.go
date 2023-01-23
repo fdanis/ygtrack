@@ -186,10 +186,8 @@ func (h *MetricHandler) UpdateBatch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	tx.Commit()
-
 	h.WriteToFileIfNeeded()
 	w.WriteHeader(http.StatusOK)
-
 }
 
 func (h *MetricHandler) AddCounter(name string, val int64) (int64, error) {
