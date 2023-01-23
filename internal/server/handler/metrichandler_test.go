@@ -149,10 +149,8 @@ func TestMetricHandler_GetValue(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-
 		t.Run(tt.name, func(t *testing.T) {
 			request := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/value/%s/%s", tt.args.typeName, tt.args.metricName), nil)
-
 			rctx := chi.NewRouteContext()
 			rctx.URLParams.Add("type", tt.args.typeName)
 			rctx.URLParams.Add("name", tt.args.metricName)
@@ -222,7 +220,6 @@ func TestMetricHandler_GetAll(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-
 		t.Run(tt.name, func(t *testing.T) {
 			var app config.AppConfig
 			cachedTemplate, err := render.CreateTemplateCache()
@@ -255,9 +252,7 @@ func TestMetricHandler_GetAll(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-
 			assert.NotEmpty(t, resBody)
-
 		})
 	}
 }
@@ -354,18 +349,14 @@ func TestMetricHandler_Update(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-
 		t.Run(tt.name, func(t *testing.T) {
 			cr := metricrepository.MetricRepository[int64]{}
 			cr.Datastorage = tt.fields.counterStorage
 			gr := metricrepository.MetricRepository[float64]{}
 			gr.Datastorage = tt.fields.gaugeStorage
 			metricHandler := MetricHandler{counterRepo: &cr, gaugeRepo: &gr}
-
 			for _, arg := range tt.args {
-
 				request := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/update/%s/%s/%s", arg.typeName, arg.metricName, arg.value), nil)
-
 				rctx := chi.NewRouteContext()
 				rctx.URLParams.Add("type", arg.typeName)
 				rctx.URLParams.Add("name", arg.metricName)
@@ -398,7 +389,6 @@ func TestMetricHandler_Update(t *testing.T) {
 			}
 			assert.ElementsMatch(t, gaugeList, tt.want.gaugeStorage)
 			assert.ElementsMatch(t, counterList, tt.want.counterStorage)
-
 		})
 	}
 }
@@ -530,9 +520,7 @@ func TestMetricHandler_GetValueJSON(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-
 		t.Run(tt.name, func(t *testing.T) {
-
 			model := models.Metrics{ID: tt.args.metricName, MType: tt.args.typeName}
 			data, err := json.Marshal(model)
 			if err != nil {
@@ -554,19 +542,16 @@ func TestMetricHandler_GetValueJSON(t *testing.T) {
 			if res.StatusCode != tt.want.code {
 				t.Errorf("Expected status code %d, got %d", tt.want.code, w.Code)
 			}
-
 			defer res.Body.Close()
 
 			dec := json.NewDecoder(res.Body)
 			dec.Decode(&model)
-
 			if err != nil {
 				t.Fatal(err)
 			}
 
 			switch tt.args.typeName {
 			case constants.MetricsTypeGauge:
-
 				if s, err := strconv.ParseFloat(tt.want.response, 64); err == nil {
 					assert.Equal(t, s, *model.Value)
 				} else {
@@ -578,7 +563,6 @@ func TestMetricHandler_GetValueJSON(t *testing.T) {
 				} else {
 					assert.Nil(t, model.Delta, "value should be empty")
 				}
-
 			}
 
 			if res.Header.Get("Content-Type") != tt.want.contentType {

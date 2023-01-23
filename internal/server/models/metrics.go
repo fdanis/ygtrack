@@ -17,7 +17,6 @@ type Metrics struct {
 
 func (m *Metrics) UnmarshalJSON(data []byte) error {
 	type MetricsAlias Metrics
-
 	aliasValue := &struct {
 		*MetricsAlias
 		Delta json.RawMessage `json:"delta,omitempty"`
