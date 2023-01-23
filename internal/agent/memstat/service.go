@@ -15,7 +15,6 @@ import (
 
 	"github.com/fdanis/ygtrack/internal/helpers"
 	"github.com/fdanis/ygtrack/internal/server/models"
-	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/shirou/gopsutil/v3/mem"
 	"golang.org/x/sync/errgroup"
 )
@@ -101,12 +100,7 @@ func (m *Service) UpdateGopsUtil() {
 	}
 	m.gaugeDictionary["FreeMemory"] = float64(virtual.Free)
 	m.gaugeDictionary["TotalMemory"] = float64(virtual.Total)
-
-	c, err := cpu.Counts(true)
-	if err != nil {
-		log.Println(err)
-	}
-	m.gaugeDictionary["CPUutilization1"] = float64(c)
+	m.gaugeDictionary["CPUutilization1"] = float64(virtual.UsedPercent)
 }
 
 func (m *Service) Send(url string) {

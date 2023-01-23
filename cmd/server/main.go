@@ -35,7 +35,7 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
-
+		defer db.Close()	
 	}
 
 	//initialize html template
@@ -74,8 +74,5 @@ func main() {
 		log.Fatal(err)
 	}
 
-	if db != nil {
-		db.Close()
-	}
 	log.Println("server stoped")
 }
