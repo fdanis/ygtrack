@@ -41,7 +41,6 @@ require (
 	github.com/golang-migrate/migrate v3.5.4+incompatible
 	github.com/jackc/pgx/v5 v5.2.0
 	github.com/mattn/go-sqlite3 v1.14.16
-	github.com/shirou/gopsutil v3.21.11+incompatible
 	github.com/shirou/gopsutil/v3 v3.22.12
 	github.com/stretchr/testify v1.8.1
 	golang.org/x/sync v0.0.0-20220923202941-7f9b1623fab7
