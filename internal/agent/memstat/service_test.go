@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"runtime"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/fdanis/ygtrack/internal/server/models"
@@ -19,6 +20,7 @@ const (
 
 type simpleMockHTTPHelper struct {
 	paths map[string]int
+	lock  sync.Mutex
 }
 
 func (h *simpleMockHTTPHelper) Post(client *http.Client, url string, header map[string]string, data *bytes.Buffer) error {
@@ -30,12 +32,14 @@ func (h *simpleMockHTTPHelper) Post(client *http.Client, url string, header map[
 	} else {
 		formatedURL = fmt.Sprintf("%s/%s/%s/%d", url, m.MType, m.ID, *m.Delta)
 	}
-	println(formatedURL)
+	h.lock.Lock()
 	for k := range h.paths {
+
 		if strings.Contains(formatedURL, k) {
 			h.paths[k]++
 		}
 	}
+	h.lock.Unlock()
 	return nil
 }
 func TestSimpleMemStatService_Update(t *testing.T) {
