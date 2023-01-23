@@ -104,9 +104,7 @@ func (m *Service) UpdateGopsUtil() {
 }
 
 func (m *Service) Send(url string) {
-	fmt.Printf("send metrics %s \n", time.Now().Format("15:04:05"))
 	metrics := m.getMetrics()
-
 	//generate hash
 	if m.hashkey != "" {
 		g := &errgroup.Group{}
@@ -131,7 +129,6 @@ func (m *Service) Send(url string) {
 				return m.send(m.httpclient, url, map[string]string{"Content-Type": "application/json"}, data)
 			},
 		}
-
 		g.Go(w.Do)
 	}
 
