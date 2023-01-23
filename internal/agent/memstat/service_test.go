@@ -10,6 +10,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/fdanis/ygtrack/internal/constants"
 	"github.com/fdanis/ygtrack/internal/server/models"
 	"github.com/stretchr/testify/assert"
 )
@@ -30,7 +31,7 @@ func (h *simpleMockHTTPHelper) Post(client *http.Client, url string, header map[
 	m := models.Metrics{}
 	json.Unmarshal(data.Bytes(), &m)
 	formatedURL := ""
-	if m.MType == gauge {
+	if m.MType == constants.MetricsTypeGauge {
 		formatedURL = fmt.Sprintf("%s/%s/", url, m.MType)
 	} else {
 		formatedURL = fmt.Sprintf("%s/%s/%s/%d", url, m.MType, m.ID, *m.Delta)
@@ -79,8 +80,8 @@ func TestSimpleMemStatService_Send(t *testing.T) {
 			name:   "send some gauge",
 			values: map[string]float64{"Alloc": 1234, "Frees": 123},
 			hhelper: simpleMockHTTPHelper{paths: map[string]int{
-				fakeurl + "/" + gauge + "/":                      0,
-				fakeurl + "/" + counter + "/" + pollCount + "/1": 0,
+				fakeurl + "/" + constants.MetricsTypeGauge + "/":                      0,
+				fakeurl + "/" + constants.MetricsTypeCounter + "/" + pollCount + "/1": 0,
 			}},
 			sendCount: 2,
 		},
@@ -88,8 +89,8 @@ func TestSimpleMemStatService_Send(t *testing.T) {
 			name:   "send without gauge",
 			values: map[string]float64{},
 			hhelper: simpleMockHTTPHelper{paths: map[string]int{
-				fakeurl + "/" + gauge + "/":                      0,
-				fakeurl + "/" + counter + "/" + pollCount + "/1": 0,
+				fakeurl + "/" + constants.MetricsTypeGauge + "/":                      0,
+				fakeurl + "/" + constants.MetricsTypeCounter + "/" + pollCount + "/1": 0,
 			}},
 			sendCount: 0,
 		},
@@ -102,7 +103,7 @@ func TestSimpleMemStatService_Send(t *testing.T) {
 			res.gaugeDictionary = tt.values
 			res.Send(fakeurl)
 			for k, v := range tt.hhelper.paths {
-				if strings.Contains(k, gauge) {
+				if strings.Contains(k, constants.MetricsTypeGauge) {
 					assert.Equal(t, tt.sendCount, v, fmt.Sprintf("%s should be called %d", k, tt.sendCount))
 				} else {
 					assert.Equal(t, 0, v, k+" should not be called")

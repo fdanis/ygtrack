@@ -13,6 +13,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/fdanis/ygtrack/internal/constants"
 	"github.com/fdanis/ygtrack/internal/helpers"
 	"github.com/fdanis/ygtrack/internal/server/models"
 	"github.com/shirou/gopsutil/v3/mem"
@@ -20,8 +21,6 @@ import (
 )
 
 const (
-	gauge       = "gauge"
-	counter     = "counter"
 	pollCount   = "PollCount"
 	randomCount = "RandomValue"
 )
@@ -206,11 +205,11 @@ func (m *Service) getMetrics() []*models.Metrics {
 	allmetrics := make([]*models.Metrics, 0, len(m.gaugeDictionary)+2)
 	for key, val := range m.gaugeDictionary {
 		v := val
-		allmetrics = append(allmetrics, &models.Metrics{ID: key, MType: gauge, Value: &v})
+		allmetrics = append(allmetrics, &models.Metrics{ID: key, MType: constants.MetricsTypeGauge, Value: &v})
 	}
 	for key, val := range m.countDictionary {
 		v := val
-		allmetrics = append(allmetrics, &models.Metrics{ID: key, MType: counter, Delta: &v})
+		allmetrics = append(allmetrics, &models.Metrics{ID: key, MType: constants.MetricsTypeCounter, Delta: &v})
 	}
 	m.lock.RUnlock()
 	return allmetrics

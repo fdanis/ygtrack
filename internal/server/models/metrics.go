@@ -30,7 +30,7 @@ func (m *Metrics) UnmarshalJSON(data []byte) error {
 	}
 
 	switch m.MType {
-	case "gauge":
+	case constants.MetricsTypeGauge:
 		var value float64
 		if aliasValue.Value != nil {
 			if err := json.Unmarshal(aliasValue.Value, &value); err != nil {
@@ -38,7 +38,7 @@ func (m *Metrics) UnmarshalJSON(data []byte) error {
 			}
 			m.Value = &value
 		}
-	case "counter":
+	case constants.MetricsTypeCounter:
 		var delta int64
 		if aliasValue.Delta != nil {
 			if err := json.Unmarshal(aliasValue.Delta, &delta); err != nil {

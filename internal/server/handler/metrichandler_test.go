@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/fdanis/ygtrack/internal/constants"
 	"github.com/fdanis/ygtrack/internal/server/config"
 	"github.com/fdanis/ygtrack/internal/server/models"
 	"github.com/fdanis/ygtrack/internal/server/render"
@@ -52,7 +53,7 @@ func TestMetricHandler_GetValue(t *testing.T) {
 				counterStorage: &map[string]dataclass.Metric[int64]{"count": {Name: "Count", Value: 5}},
 				gaugeStorage:   &map[string]dataclass.Metric[float64]{"test1": {Name: "TEst1", Value: 1}, "test2": {Name: "test2", Value: 2}},
 			},
-			args: args{typeName: "counter", metricName: "Count"},
+			args: args{typeName: constants.MetricsTypeCounter, metricName: "Count"},
 			want: want{
 				code:        200,
 				response:    "5",
@@ -65,7 +66,7 @@ func TestMetricHandler_GetValue(t *testing.T) {
 				counterStorage: &map[string]dataclass.Metric[int64]{"count": {Name: "Count", Value: -2345}},
 				gaugeStorage:   &map[string]dataclass.Metric[float64]{"test1": {Name: "TEst1", Value: 1}, "test2": {Name: "test2", Value: 2}},
 			},
-			args: args{typeName: "counter", metricName: "Count"},
+			args: args{typeName: constants.MetricsTypeCounter, metricName: "Count"},
 			want: want{
 				code:        200,
 				response:    "-2345",
@@ -91,7 +92,7 @@ func TestMetricHandler_GetValue(t *testing.T) {
 				counterStorage: &map[string]dataclass.Metric[int64]{"count": {Name: "Count", Value: 5}},
 				gaugeStorage:   &map[string]dataclass.Metric[float64]{"test1": {Name: "TEst1", Value: 1}, "test2": {Name: "test2", Value: 2}},
 			},
-			args: args{typeName: "counter", metricName: "Fake_Count"},
+			args: args{typeName: constants.MetricsTypeCounter, metricName: "Fake_Count"},
 			want: want{
 				code:        404,
 				response:    "",
@@ -103,7 +104,7 @@ func TestMetricHandler_GetValue(t *testing.T) {
 			fields: fields{
 				counterStorage: &map[string]dataclass.Metric[int64]{"count": {Name: "Count", Value: 5}},
 				gaugeStorage:   &map[string]dataclass.Metric[float64]{"test1": {Name: "TEst1", Value: 1}, "test2": {Name: "test2", Value: 2}}},
-			args: args{typeName: "gauge", metricName: "Fake_Count"},
+			args: args{typeName: constants.MetricsTypeGauge, metricName: "Fake_Count"},
 			want: want{
 				code:        404,
 				response:    "",
@@ -115,7 +116,7 @@ func TestMetricHandler_GetValue(t *testing.T) {
 			fields: fields{
 				counterStorage: &map[string]dataclass.Metric[int64]{"count": {Name: "Count", Value: 5}},
 				gaugeStorage:   &map[string]dataclass.Metric[float64]{"test1": {Name: "TEst1", Value: 1}, "test2": {Name: "test2", Value: 2}}},
-			args: args{typeName: "gauge", metricName: "test1"},
+			args: args{typeName: constants.MetricsTypeGauge, metricName: "test1"},
 			want: want{
 				code:        200,
 				response:    "1.000",
@@ -127,7 +128,7 @@ func TestMetricHandler_GetValue(t *testing.T) {
 			fields: fields{
 				counterStorage: &map[string]dataclass.Metric[int64]{"count": {Name: "Count", Value: 5}},
 				gaugeStorage:   &map[string]dataclass.Metric[float64]{"test1": {Name: "TEst1", Value: 1}, "test2": {Name: "test2", Value: 2}}},
-			args: args{typeName: "gauge", metricName: "Test1"},
+			args: args{typeName: constants.MetricsTypeGauge, metricName: "Test1"},
 			want: want{
 				code:        200,
 				response:    "1.000",
@@ -139,7 +140,7 @@ func TestMetricHandler_GetValue(t *testing.T) {
 			fields: fields{
 				counterStorage: &map[string]dataclass.Metric[int64]{"count": {Name: "Count", Value: 5}},
 				gaugeStorage:   &map[string]dataclass.Metric[float64]{"test1": {Name: "TEst1", Value: 1}, "test2": {Name: "test2", Value: 2}}},
-			args: args{typeName: "counter", metricName: "COUNT"},
+			args: args{typeName: constants.MetricsTypeCounter, metricName: "COUNT"},
 			want: want{
 				code:        200,
 				response:    "5",
@@ -296,11 +297,11 @@ func TestMetricHandler_Update(t *testing.T) {
 				gaugeStorage:   &map[string]dataclass.Metric[float64]{},
 			},
 			args: []args{
-				{typeName: "counter", metricName: "Count", value: "10"},
-				{typeName: "counter", metricName: "Count", value: "20"},
-				{typeName: "counter", metricName: "Count", value: "30"},
-				{typeName: "gauge", metricName: "Test", value: "10.11"},
-				{typeName: "gauge", metricName: "Test", value: "20.33"},
+				{typeName: constants.MetricsTypeCounter, metricName: "Count", value: "10"},
+				{typeName: constants.MetricsTypeCounter, metricName: "Count", value: "20"},
+				{typeName: constants.MetricsTypeCounter, metricName: "Count", value: "30"},
+				{typeName: constants.MetricsTypeGauge, metricName: "Test", value: "10.11"},
+				{typeName: constants.MetricsTypeGauge, metricName: "Test", value: "20.33"},
 			},
 			want: want{
 				code:           200,
@@ -335,13 +336,13 @@ func TestMetricHandler_Update(t *testing.T) {
 				gaugeStorage:   &map[string]dataclass.Metric[float64]{},
 			},
 			args: []args{
-				{typeName: "counter", metricName: "Count", value: "45jhkj"},
-				{typeName: "counter", metricName: "Count", value: "asdf20"},
-				{typeName: "counter", metricName: "Count", value: "asdf"},
-				{typeName: "counter", metricName: "Count", value: "34.34"},
-				{typeName: "gauge", metricName: "Test", value: "erte"},
-				{typeName: "gauge", metricName: "Test", value: "20fsd"},
-				{typeName: "gauge", metricName: "Test", value: "asdf20fsd"},
+				{typeName: constants.MetricsTypeCounter, metricName: "Count", value: "45jhkj"},
+				{typeName: constants.MetricsTypeCounter, metricName: "Count", value: "asdf20"},
+				{typeName: constants.MetricsTypeCounter, metricName: "Count", value: "asdf"},
+				{typeName: constants.MetricsTypeCounter, metricName: "Count", value: "34.34"},
+				{typeName: constants.MetricsTypeGauge, metricName: "Test", value: "erte"},
+				{typeName: constants.MetricsTypeGauge, metricName: "Test", value: "20fsd"},
+				{typeName: constants.MetricsTypeGauge, metricName: "Test", value: "asdf20fsd"},
 			},
 			want: want{
 				code:           400,
@@ -433,7 +434,7 @@ func TestMetricHandler_GetValueJSON(t *testing.T) {
 				counterStorage: &map[string]dataclass.Metric[int64]{"count": {Name: "Count", Value: 5}},
 				gaugeStorage:   &map[string]dataclass.Metric[float64]{"test1": {Name: "TEst1", Value: 1}, "test2": {Name: "test2", Value: 2}},
 			},
-			args: args{typeName: "counter", metricName: "Count"},
+			args: args{typeName: constants.MetricsTypeCounter, metricName: "Count"},
 			want: want{
 				code:        200,
 				response:    "5",
@@ -446,7 +447,7 @@ func TestMetricHandler_GetValueJSON(t *testing.T) {
 				counterStorage: &map[string]dataclass.Metric[int64]{"count": {Name: "Count", Value: -2345}},
 				gaugeStorage:   &map[string]dataclass.Metric[float64]{"test1": {Name: "TEst1", Value: 1}, "test2": {Name: "test2", Value: 2}},
 			},
-			args: args{typeName: "counter", metricName: "Count"},
+			args: args{typeName: constants.MetricsTypeCounter, metricName: "Count"},
 			want: want{
 				code:        200,
 				response:    "-2345",
@@ -472,7 +473,7 @@ func TestMetricHandler_GetValueJSON(t *testing.T) {
 				counterStorage: &map[string]dataclass.Metric[int64]{"count": {Name: "Count", Value: 5}},
 				gaugeStorage:   &map[string]dataclass.Metric[float64]{"test1": {Name: "TEst1", Value: 1}, "test2": {Name: "test2", Value: 2}},
 			},
-			args: args{typeName: "counter", metricName: "Fake_Count"},
+			args: args{typeName: constants.MetricsTypeCounter, metricName: "Fake_Count"},
 			want: want{
 				code:        404,
 				response:    "",
@@ -484,7 +485,7 @@ func TestMetricHandler_GetValueJSON(t *testing.T) {
 			fields: fields{
 				counterStorage: &map[string]dataclass.Metric[int64]{"count": {Name: "Count", Value: 5}},
 				gaugeStorage:   &map[string]dataclass.Metric[float64]{"test1": {Name: "TEst1", Value: 1}, "test2": {Name: "test2", Value: 2}}},
-			args: args{typeName: "gauge", metricName: "Fake_Count"},
+			args: args{typeName: constants.MetricsTypeGauge, metricName: "Fake_Count"},
 			want: want{
 				code:        404,
 				response:    "",
@@ -496,7 +497,7 @@ func TestMetricHandler_GetValueJSON(t *testing.T) {
 			fields: fields{
 				counterStorage: &map[string]dataclass.Metric[int64]{"count": {Name: "Count", Value: 5}},
 				gaugeStorage:   &map[string]dataclass.Metric[float64]{"test1": {Name: "TEst1", Value: 1}, "test2": {Name: "test2", Value: 2}}},
-			args: args{typeName: "gauge", metricName: "test1"},
+			args: args{typeName: constants.MetricsTypeGauge, metricName: "test1"},
 			want: want{
 				code:        200,
 				response:    "1.000",
@@ -508,7 +509,7 @@ func TestMetricHandler_GetValueJSON(t *testing.T) {
 			fields: fields{
 				counterStorage: &map[string]dataclass.Metric[int64]{"count": {Name: "Count", Value: 5}},
 				gaugeStorage:   &map[string]dataclass.Metric[float64]{"test1": {Name: "TEst1", Value: 1}, "test2": {Name: "test2", Value: 2}}},
-			args: args{typeName: "gauge", metricName: "Test1"},
+			args: args{typeName: constants.MetricsTypeGauge, metricName: "Test1"},
 			want: want{
 				code:        200,
 				response:    "1.000",
@@ -520,7 +521,7 @@ func TestMetricHandler_GetValueJSON(t *testing.T) {
 			fields: fields{
 				counterStorage: &map[string]dataclass.Metric[int64]{"count": {Name: "Count", Value: 5}},
 				gaugeStorage:   &map[string]dataclass.Metric[float64]{"test1": {Name: "TEst1", Value: 1}, "test2": {Name: "test2", Value: 2}}},
-			args: args{typeName: "counter", metricName: "COUNT"},
+			args: args{typeName: constants.MetricsTypeCounter, metricName: "COUNT"},
 			want: want{
 				code:        200,
 				response:    "5",
@@ -564,14 +565,14 @@ func TestMetricHandler_GetValueJSON(t *testing.T) {
 			}
 
 			switch tt.args.typeName {
-			case "gauge":
+			case constants.MetricsTypeGauge:
 
 				if s, err := strconv.ParseFloat(tt.want.response, 64); err == nil {
 					assert.Equal(t, s, *model.Value)
 				} else {
 					assert.Nil(t, model.Value, "value should be empty")
 				}
-			case "counter":
+			case constants.MetricsTypeCounter:
 				if s, err := strconv.ParseInt(tt.want.response, 10, 64); err == nil {
 					assert.Equal(t, s, *model.Delta)
 				} else {

@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/fdanis/ygtrack/internal/constants"
 	"github.com/fdanis/ygtrack/internal/helpers"
 	"github.com/fdanis/ygtrack/internal/server/config"
 	"github.com/fdanis/ygtrack/internal/server/models"
@@ -44,14 +45,14 @@ func (h *MetricHandler) Update(w http.ResponseWriter, r *http.Request) {
 	nameMetric := chi.URLParam(r, "name")
 	valueMetric := chi.URLParam(r, "value")
 	switch typeMetric {
-	case "gauge":
+	case constants.MetricsTypeGauge:
 		val, err := strconv.ParseFloat(valueMetric, 64)
 		if err != nil {
 			http.Error(w, "Incorrect value", http.StatusBadRequest)
 			return
 		}
 		h.gaugeRepo.Add(dataclass.Metric[float64]{Name: nameMetric, Value: val})
-	case "counter":
+	case constants.MetricsTypeCounter:
 		val, err := strconv.ParseInt(valueMetric, 10, 64)
 		if err != nil {
 			http.Error(w, "Incorrect value", http.StatusBadRequest)
@@ -98,7 +99,7 @@ func (h *MetricHandler) UpdateJSON(w http.ResponseWriter, r *http.Request) {
 	}
 
 	switch model.MType {
-	case "counter":
+	case constants.MetricsTypeCounter:
 		if model.Delta == nil {
 			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		}
@@ -108,7 +109,7 @@ func (h *MetricHandler) UpdateJSON(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		model.Delta = &val
-	case "gauge":
+	case constants.MetricsTypeGauge:
 		if model.Value == nil {
 			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		}
@@ -142,7 +143,7 @@ func (h *MetricHandler) UpdateBatch(w http.ResponseWriter, r *http.Request) {
 	counterList := []dataclass.Metric[int64]{}
 	countVal := map[string]int64{}
 	for _, val := range model {
-		if val.MType == "counter" {
+		if val.MType == constants.MetricsTypeCounter {
 			if _, ok := countVal[val.ID]; !ok {
 				oldValue, err := h.counterRepo.GetByName(val.ID)
 				if err != nil {
@@ -159,7 +160,7 @@ func (h *MetricHandler) UpdateBatch(w http.ResponseWriter, r *http.Request) {
 			countVal[val.ID] += *val.Delta
 			counterList = append(counterList, dataclass.Metric[int64]{Name: val.ID, Value: countVal[val.ID]})
 
-		} else if val.MType == "gauge" {
+		} else if val.MType == constants.MetricsTypeGauge {
 			gaugeList = append(gaugeList, dataclass.Metric[float64]{Name: val.ID, Value: *val.Value})
 		} else {
 			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
@@ -207,7 +208,7 @@ func (h *MetricHandler) GetValue(w http.ResponseWriter, r *http.Request) {
 	nameMetric := chi.URLParam(r, "name")
 	result := ""
 	switch typeMetric {
-	case "gauge":
+	case constants.MetricsTypeGauge:
 		met, err := h.gaugeRepo.GetByName(nameMetric)
 		if err != nil {
 			log.Print(err)
@@ -217,7 +218,7 @@ func (h *MetricHandler) GetValue(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		result = fmt.Sprintf("%.3f", met.Value)
-	case "counter":
+	case constants.MetricsTypeCounter:
 		met, err := h.counterRepo.GetByName(nameMetric)
 		if err != nil {
 			log.Print(err)
@@ -252,7 +253,7 @@ func (h *MetricHandler) GetJSONValue(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	switch model.MType {
-	case "gauge":
+	case constants.MetricsTypeGauge:
 		met, err := h.gaugeRepo.GetByName(model.ID)
 		if err != nil {
 			log.Print(err)
@@ -262,7 +263,7 @@ func (h *MetricHandler) GetJSONValue(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		model.Value = &met.Value
-	case "counter":
+	case constants.MetricsTypeCounter:
 		met, err := h.counterRepo.GetByName(model.ID)
 		if err != nil {
 			log.Print(err)
