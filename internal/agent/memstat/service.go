@@ -108,13 +108,13 @@ func (m *Service) Send(url string) {
 	if m.hashkey != "" {
 		g := &errgroup.Group{}
 		for _, v := range metrics {
-			gen := helpers.HashGenerator{Metric: v, Key: m.hashkey}
+			gen := helpers.HashGenerator{Object: v, Key: m.hashkey}
 			g.Go(gen.Do)
 		}
 		err := g.Wait()
 		if err != nil {
 			log.Printf("could not refresh hash  %v", err)
-			//don't send any metrics if exists error
+			//don't send any metrics if error exists
 			return
 		}
 	}
