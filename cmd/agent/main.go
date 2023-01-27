@@ -13,6 +13,7 @@ import (
 
 	"github.com/fdanis/ygtrack/internal/agent"
 	"github.com/fdanis/ygtrack/internal/agent/memstat"
+	"github.com/fdanis/ygtrack/internal/helpers"
 	//"github.com/fdanis/ygtrack/internal/helpers/fakehttphelper"
 )
 
@@ -24,12 +25,13 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	m := memstat.NewService(config.Key)
+	m := memstat.NewMetricService(config.Key)
+	s := memstat.NewSenderMetric()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	go Update(ctx, config.PollInterval, m)
 	go UpdateGopsUtil(ctx, config.PollInterval, m)
-	go Send(ctx, config.ReportInterval, config.Address, m)
+	go Send(ctx, config, m, s)
 
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, syscall.SIGINT)
@@ -38,7 +40,7 @@ func main() {
 	fmt.Println("exit")
 }
 
-func Update(ctx context.Context, poolInterval time.Duration, service *memstat.Service) {
+func Update(ctx context.Context, poolInterval time.Duration, service *memstat.MetricService) {
 	t := time.NewTicker(poolInterval)
 	for {
 		select {
@@ -53,7 +55,7 @@ func Update(ctx context.Context, poolInterval time.Duration, service *memstat.Se
 		}
 	}
 }
-func UpdateGopsUtil(ctx context.Context, poolInterval time.Duration, service *memstat.Service) {
+func UpdateGopsUtil(ctx context.Context, poolInterval time.Duration, service *memstat.MetricService) {
 	t := time.NewTicker(poolInterval)
 	for {
 		select {
@@ -68,12 +70,20 @@ func UpdateGopsUtil(ctx context.Context, poolInterval time.Duration, service *me
 		}
 	}
 }
-func Send(ctx context.Context, sendInterval time.Duration, host string, service *memstat.Service) {
-	t := time.NewTicker(sendInterval)
+func Send(ctx context.Context, conf agent.Conf, m *memstat.MetricService, s *memstat.SenderMetric) {
+	t := time.NewTicker(time.Duration(conf.ReportInterval.Seconds()))
 	for {
 		select {
 		case <-t.C:
-			service.Send("http://" + strings.TrimRight(host, "/") + "/update")
+			metrics := m.GetMetrics()
+			if conf.Key != "" {
+				err := helpers.SetHash(conf.Key, metrics)
+				if err != nil {
+					// don't send if error exists
+					break
+				}
+			}
+			s.Send("http://"+strings.TrimRight(conf.Address, "/")+"/update", metrics)
 		case <-ctx.Done():
 			{
 				fmt.Println("send ticker stoped")

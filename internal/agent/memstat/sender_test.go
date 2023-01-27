@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"runtime"
 	"strings"
 	"sync"
 	"testing"
@@ -45,40 +44,20 @@ func (h *simpleMockHTTPHelper) Post(client *http.Client, url string, header map[
 	}
 	return nil
 }
-func TestSimpleMemStatService_Update(t *testing.T) {
-	tests := []struct { // добавился слайс тестов
-		name     string
-		values   runtime.MemStats
-		want     runtime.MemStats
-		wantPool int64
-	}{
-		{
-			name:     "check send",
-			values:   runtime.MemStats{},
-			want:     runtime.MemStats{Alloc: 1234, Frees: 123},
-			wantPool: 1,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			res := NewService("")
-			res.Update()
-			assert.NotEqual(t, float64(res.gaugeDictionary["Alloc"]), 0, "alloc property not valid")
-			assert.Equal(t, tt.wantPool, res.countDictionary[pollCount], "uint property  not valid")
-		})
-	}
-}
 
 func TestSimpleMemStatService_Send(t *testing.T) {
 	tests := []struct { // добавился слайс тестов
 		name      string
-		values    map[string]float64
+		values    []*models.Metrics
 		sendCount int
 		hhelper   simpleMockHTTPHelper
 	}{
 		{
-			name:   "send some gauge",
-			values: map[string]float64{"Alloc": 1234, "Frees": 123},
+			name: "send some gauge",
+			values: []*models.Metrics{
+				{ID: "Alloc", MType: constants.MetricsTypeGauge, Value: func(i float64) *float64 { return &i }(1234)},
+				{ID: "Frees", MType: constants.MetricsTypeGauge, Value: func(i float64) *float64 { return &i }(123)},
+			},
 			hhelper: simpleMockHTTPHelper{paths: map[string]int{
 				fakeurl + "/" + constants.MetricsTypeGauge + "/":                      0,
 				fakeurl + "/" + constants.MetricsTypeCounter + "/" + pollCount + "/1": 0,
@@ -87,7 +66,7 @@ func TestSimpleMemStatService_Send(t *testing.T) {
 		},
 		{
 			name:   "send without gauge",
-			values: map[string]float64{},
+			values: []*models.Metrics{},
 			hhelper: simpleMockHTTPHelper{paths: map[string]int{
 				fakeurl + "/" + constants.MetricsTypeGauge + "/":                      0,
 				fakeurl + "/" + constants.MetricsTypeCounter + "/" + pollCount + "/1": 0,
@@ -98,10 +77,10 @@ func TestSimpleMemStatService_Send(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			res := NewService("")
+			res := NewSenderMetric()
 			res.send = tt.hhelper.Post
-			res.gaugeDictionary = tt.values
-			res.Send(fakeurl)
+
+			res.Send(fakeurl, tt.values)
 			for k, v := range tt.hhelper.paths {
 				if strings.Contains(k, constants.MetricsTypeGauge) {
 					assert.Equal(t, tt.sendCount, v, fmt.Sprintf("%s should be called %d", k, tt.sendCount))

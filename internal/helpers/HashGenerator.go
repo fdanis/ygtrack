@@ -6,6 +6,8 @@ import (
 	"encoding/hex"
 	"fmt"
 	"log"
+
+	"golang.org/x/sync/errgroup"
 )
 
 type HashGenerator struct {
@@ -33,6 +35,22 @@ func GetHash(data any, key string) (string, error) {
 		result = hex.EncodeToString(h.Sum(nil))
 	}
 	return result, nil
+}
+
+func SetHash[T HashedObject](key string, datalist []T) error {
+	if key != "" {
+		g := &errgroup.Group{}
+		for _, v := range datalist {
+			gen := HashGenerator{Object: v, Key: key}
+			g.Go(gen.Do)
+		}
+		err := g.Wait()
+		if err != nil {
+			log.Printf("could not set hash  %v", err)
+			return err
+		}
+	}
+	return nil
 }
 
 type HashedObject interface {
