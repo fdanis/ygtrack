@@ -23,7 +23,7 @@ func NewSenderMetric() *SenderMetric {
 	s := &SenderMetric{}
 	s.send = post
 	s.httpclient = &http.Client{}
-	s.SendersCount = 2
+	s.SendersCount = 10
 	return s
 }
 
