@@ -71,19 +71,21 @@ func UpdateGopsUtil(ctx context.Context, poolInterval time.Duration, service *me
 	}
 }
 func Send(ctx context.Context, conf agent.Conf, m *memstat.MetricService, s *memstat.SenderMetric) {
-	t := time.NewTicker(time.Duration(conf.ReportInterval.Seconds()))
+	t := time.NewTicker(conf.ReportInterval)
 	for {
 		select {
 		case <-t.C:
-			metrics := m.GetMetrics()
-			if conf.Key != "" {
-				err := helpers.SetHash(conf.Key, metrics)
-				if err != nil {
-					// don't send if error exists
-					break
+			{
+				metrics := m.GetMetrics()
+				if conf.Key != "" {
+					err := helpers.SetHash(conf.Key, metrics)
+					if err != nil {
+						// don't send if error exists
+						break
+					}
 				}
+				s.Send("http://"+strings.TrimRight(conf.Address, "/")+"/update", metrics)
 			}
-			s.Send("http://"+strings.TrimRight(conf.Address, "/")+"/update", metrics)
 		case <-ctx.Done():
 			{
 				fmt.Println("send ticker stoped")
