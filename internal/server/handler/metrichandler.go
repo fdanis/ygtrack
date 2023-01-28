@@ -9,6 +9,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/fdanis/ygtrack/internal/constants"
+	"github.com/fdanis/ygtrack/internal/helpers"
 	"github.com/fdanis/ygtrack/internal/server/config"
 	"github.com/fdanis/ygtrack/internal/server/models"
 	"github.com/fdanis/ygtrack/internal/server/render"
@@ -43,14 +45,14 @@ func (h *MetricHandler) Update(w http.ResponseWriter, r *http.Request) {
 	nameMetric := chi.URLParam(r, "name")
 	valueMetric := chi.URLParam(r, "value")
 	switch typeMetric {
-	case "gauge":
+	case constants.MetricsTypeGauge:
 		val, err := strconv.ParseFloat(valueMetric, 64)
 		if err != nil {
 			http.Error(w, "Incorrect value", http.StatusBadRequest)
 			return
 		}
 		h.gaugeRepo.Add(dataclass.Metric[float64]{Name: nameMetric, Value: val})
-	case "counter":
+	case constants.MetricsTypeCounter:
 		val, err := strconv.ParseInt(valueMetric, 10, 64)
 		if err != nil {
 			http.Error(w, "Incorrect value", http.StatusBadRequest)
@@ -86,18 +88,18 @@ func (h *MetricHandler) UpdateJSON(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if h.hashkey != "" {
-		oldHash := model.Hash
-		if err := model.RefreshHash(h.hashkey); err != nil {
+		hash, err := helpers.GetHash(model, h.hashkey)
+		if err != nil {
 			log.Printf("Hash generation error: %v", err)
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		}
-		if oldHash != model.Hash {
+		if hash != model.Hash {
 			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		}
 	}
 
 	switch model.MType {
-	case "counter":
+	case constants.MetricsTypeCounter:
 		if model.Delta == nil {
 			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		}
@@ -107,7 +109,7 @@ func (h *MetricHandler) UpdateJSON(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		model.Delta = &val
-	case "gauge":
+	case constants.MetricsTypeGauge:
 		if model.Value == nil {
 			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		}
@@ -139,10 +141,9 @@ func (h *MetricHandler) UpdateBatch(w http.ResponseWriter, r *http.Request) {
 	}
 	gaugeList := []dataclass.Metric[float64]{}
 	counterList := []dataclass.Metric[int64]{}
-	//dblGauge := map[string]byte{}
 	countVal := map[string]int64{}
 	for _, val := range model {
-		if val.MType == "counter" {
+		if val.MType == constants.MetricsTypeCounter {
 			if _, ok := countVal[val.ID]; !ok {
 				oldValue, err := h.counterRepo.GetByName(val.ID)
 				if err != nil {
@@ -159,11 +160,8 @@ func (h *MetricHandler) UpdateBatch(w http.ResponseWriter, r *http.Request) {
 			countVal[val.ID] += *val.Delta
 			counterList = append(counterList, dataclass.Metric[int64]{Name: val.ID, Value: countVal[val.ID]})
 
-		} else if val.MType == "gauge" {
-			//			if _, ok := dblGauge[val.ID]; !ok {
+		} else if val.MType == constants.MetricsTypeGauge {
 			gaugeList = append(gaugeList, dataclass.Metric[float64]{Name: val.ID, Value: *val.Value})
-			//				dblGauge[val.ID] = 0
-			//			}
 		} else {
 			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 			return
@@ -189,10 +187,8 @@ func (h *MetricHandler) UpdateBatch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	tx.Commit()
-
 	h.WriteToFileIfNeeded()
 	w.WriteHeader(http.StatusOK)
-
 }
 
 func (h *MetricHandler) AddCounter(name string, val int64) (int64, error) {
@@ -212,7 +208,7 @@ func (h *MetricHandler) GetValue(w http.ResponseWriter, r *http.Request) {
 	nameMetric := chi.URLParam(r, "name")
 	result := ""
 	switch typeMetric {
-	case "gauge":
+	case constants.MetricsTypeGauge:
 		met, err := h.gaugeRepo.GetByName(nameMetric)
 		if err != nil {
 			log.Print(err)
@@ -222,7 +218,7 @@ func (h *MetricHandler) GetValue(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		result = fmt.Sprintf("%.3f", met.Value)
-	case "counter":
+	case constants.MetricsTypeCounter:
 		met, err := h.counterRepo.GetByName(nameMetric)
 		if err != nil {
 			log.Print(err)
@@ -257,7 +253,7 @@ func (h *MetricHandler) GetJSONValue(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	switch model.MType {
-	case "gauge":
+	case constants.MetricsTypeGauge:
 		met, err := h.gaugeRepo.GetByName(model.ID)
 		if err != nil {
 			log.Print(err)
@@ -267,7 +263,7 @@ func (h *MetricHandler) GetJSONValue(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		model.Value = &met.Value
-	case "counter":
+	case constants.MetricsTypeCounter:
 		met, err := h.counterRepo.GetByName(model.ID)
 		if err != nil {
 			log.Print(err)
@@ -281,7 +277,12 @@ func (h *MetricHandler) GetJSONValue(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotImplemented)
 		return
 	}
-	model.RefreshHash(h.hashkey)
+
+	hash, err := helpers.GetHash(model, h.hashkey)
+	if err != nil {
+		log.Println(err)
+	}
+	model.Hash = hash
 	responseJSON(w, model)
 }
 
