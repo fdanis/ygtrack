@@ -90,10 +90,10 @@ func decodeJSONBody(b io.ReadCloser, contentEncoding string, dst interface{}) er
 		}
 	}
 
-	// err = dec.Decode(&struct{}{})
-	// if err != io.EOF {
-	// 	msg := "Request body must only contain a single JSON object"
-	// 	return &RequestError{status: http.StatusBadRequest, msg: msg}
-	// }
+	err = dec.Decode(&struct{}{})
+	if err != io.EOF {
+		msg := "Request body must only contain a single JSON object"
+		return &RequestError{status: http.StatusBadRequest, msg: msg}
+	}
 	return nil
 }
