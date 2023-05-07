@@ -1,3 +1,4 @@
+// Package handler contains http hendlers
 package handler
 
 import (

@@ -11,7 +11,7 @@ import (
 
 func TestMetricRepository_Add(t *testing.T) {
 	type fields struct {
-		Datastorage *map[string]dataclass.Metric[int64]
+		Datastorage map[string]dataclass.Metric[int64]
 	}
 	type args struct {
 		data dataclass.Metric[int64]
@@ -30,13 +30,13 @@ func TestMetricRepository_Add(t *testing.T) {
 		},
 		{
 			name:    "should be added one element",
-			fields:  fields{Datastorage: &map[string]dataclass.Metric[int64]{}},
+			fields:  fields{Datastorage: map[string]dataclass.Metric[int64]{}},
 			args:    []args{{data: dataclass.Metric[int64]{Name: "TestName", Value: 1}}},
 			wantErr: false,
 		},
 		{
 			name:   "should be added 2 elements",
-			fields: fields{Datastorage: &map[string]dataclass.Metric[int64]{}},
+			fields: fields{Datastorage: map[string]dataclass.Metric[int64]{}},
 			args: []args{
 				{data: dataclass.Metric[int64]{Name: "TestName", Value: 1}},
 				{data: dataclass.Metric[int64]{Name: "TestName", Value: 2}},
@@ -45,7 +45,7 @@ func TestMetricRepository_Add(t *testing.T) {
 		},
 		{
 			name:   "should be added 2 elements in 2 types",
-			fields: fields{Datastorage: &map[string]dataclass.Metric[int64]{}},
+			fields: fields{Datastorage: map[string]dataclass.Metric[int64]{}},
 			args: []args{
 				{data: dataclass.Metric[int64]{Name: "TestName", Value: 1}},
 				{data: dataclass.Metric[int64]{Name: "TestName", Value: 2}},
@@ -68,9 +68,9 @@ func TestMetricRepository_Add(t *testing.T) {
 			}
 
 			if !tt.wantErr {
-				assert.Equal(t, len(*r.Datastorage), len(typ))
+				assert.Equal(t, len(r.Datastorage), len(typ))
 				for k, v := range typ {
-					assert.Equal(t, (*r.Datastorage)[strings.ToLower(k)], v)
+					assert.Equal(t, r.Datastorage[strings.ToLower(k)], v)
 				}
 			}
 		})
@@ -79,7 +79,7 @@ func TestMetricRepository_Add(t *testing.T) {
 
 func TestMetricRepository_GetByName(t *testing.T) {
 	type fields struct {
-		Datastorage *map[string]dataclass.Metric[int64]
+		Datastorage map[string]dataclass.Metric[int64]
 	}
 	type args struct {
 		name string
@@ -93,7 +93,7 @@ func TestMetricRepository_GetByName(t *testing.T) {
 	}{
 		{
 			name:    "Get by name",
-			fields:  fields{Datastorage: &map[string]dataclass.Metric[int64]{"test1": {Name: "Test1", Value: 1}, "test2": {Name: "Test2", Value: 2}}},
+			fields:  fields{Datastorage: map[string]dataclass.Metric[int64]{"test1": {Name: "Test1", Value: 1}, "test2": {Name: "Test2", Value: 2}}},
 			args:    args{name: "Test1"},
 			want:    &dataclass.Metric[int64]{Name: "Test1", Value: 1},
 			wantErr: false,
@@ -108,7 +108,7 @@ func TestMetricRepository_GetByName(t *testing.T) {
 		{
 			name: "Get by not existing name",
 			fields: fields{
-				Datastorage: &map[string]dataclass.Metric[int64]{
+				Datastorage: map[string]dataclass.Metric[int64]{
 					"test1": {Name: "Test1", Value: 1},
 					"test2": {Name: "Test2", Value: 2},
 				},
@@ -144,7 +144,7 @@ func TestMetricRepository_GetByName(t *testing.T) {
 
 func TestMetricRepository_GetAll(t *testing.T) {
 	type fields struct {
-		Datastorage *map[string]dataclass.Metric[int64]
+		Datastorage map[string]dataclass.Metric[int64]
 	}
 	tests := []struct {
 		name    string
@@ -154,7 +154,7 @@ func TestMetricRepository_GetAll(t *testing.T) {
 	}{
 		{
 			name: "get all",
-			fields: fields{Datastorage: &map[string]dataclass.Metric[int64]{
+			fields: fields{Datastorage: map[string]dataclass.Metric[int64]{
 				"test1": {Name: "Test1", Value: 1},
 				"test2": {Name: "Test2", Value: 2},
 				"test3": {Name: "Test3", Value: 3}},
