@@ -24,8 +24,8 @@ import (
 
 func TestMetricHandler_GetValue(t *testing.T) {
 	type fields struct {
-		counterStorage *map[string]dataclass.Metric[int64]
-		gaugeStorage   *map[string]dataclass.Metric[float64]
+		counterStorage map[string]dataclass.Metric[int64]
+		gaugeStorage   map[string]dataclass.Metric[float64]
 	}
 
 	type args struct {
@@ -50,8 +50,8 @@ func TestMetricHandler_GetValue(t *testing.T) {
 		{
 			name: "positive test #1",
 			fields: fields{
-				counterStorage: &map[string]dataclass.Metric[int64]{"count": {Name: "Count", Value: 5}},
-				gaugeStorage:   &map[string]dataclass.Metric[float64]{"test1": {Name: "TEst1", Value: 1}, "test2": {Name: "test2", Value: 2}},
+				counterStorage: map[string]dataclass.Metric[int64]{"count": {Name: "Count", Value: 5}},
+				gaugeStorage:   map[string]dataclass.Metric[float64]{"test1": {Name: "TEst1", Value: 1}, "test2": {Name: "test2", Value: 2}},
 			},
 			args: args{typeName: constants.MetricsTypeCounter, metricName: "Count"},
 			want: want{
@@ -63,8 +63,8 @@ func TestMetricHandler_GetValue(t *testing.T) {
 		{
 			name: "positive test minus counter",
 			fields: fields{
-				counterStorage: &map[string]dataclass.Metric[int64]{"count": {Name: "Count", Value: -2345}},
-				gaugeStorage:   &map[string]dataclass.Metric[float64]{"test1": {Name: "TEst1", Value: 1}, "test2": {Name: "test2", Value: 2}},
+				counterStorage: map[string]dataclass.Metric[int64]{"count": {Name: "Count", Value: -2345}},
+				gaugeStorage:   map[string]dataclass.Metric[float64]{"test1": {Name: "TEst1", Value: 1}, "test2": {Name: "test2", Value: 2}},
 			},
 			args: args{typeName: constants.MetricsTypeCounter, metricName: "Count"},
 			want: want{
@@ -76,8 +76,8 @@ func TestMetricHandler_GetValue(t *testing.T) {
 		{
 			name: "fake_type_counter should be 501 #1",
 			fields: fields{
-				counterStorage: &map[string]dataclass.Metric[int64]{"count": {Name: "Count", Value: 5}},
-				gaugeStorage:   &map[string]dataclass.Metric[float64]{"test1": {Name: "TEst1", Value: 1}, "test2": {Name: "test2", Value: 2}},
+				counterStorage: map[string]dataclass.Metric[int64]{"count": {Name: "Count", Value: 5}},
+				gaugeStorage:   map[string]dataclass.Metric[float64]{"test1": {Name: "TEst1", Value: 1}, "test2": {Name: "test2", Value: 2}},
 			},
 			args: args{typeName: "fake_counter", metricName: "Count"},
 			want: want{
@@ -89,8 +89,8 @@ func TestMetricHandler_GetValue(t *testing.T) {
 		{
 			name: "incorect counter name",
 			fields: fields{
-				counterStorage: &map[string]dataclass.Metric[int64]{"count": {Name: "Count", Value: 5}},
-				gaugeStorage:   &map[string]dataclass.Metric[float64]{"test1": {Name: "TEst1", Value: 1}, "test2": {Name: "test2", Value: 2}},
+				counterStorage: map[string]dataclass.Metric[int64]{"count": {Name: "Count", Value: 5}},
+				gaugeStorage:   map[string]dataclass.Metric[float64]{"test1": {Name: "TEst1", Value: 1}, "test2": {Name: "test2", Value: 2}},
 			},
 			args: args{typeName: constants.MetricsTypeCounter, metricName: "Fake_Count"},
 			want: want{
@@ -102,8 +102,8 @@ func TestMetricHandler_GetValue(t *testing.T) {
 		{
 			name: "incorect gouge name",
 			fields: fields{
-				counterStorage: &map[string]dataclass.Metric[int64]{"count": {Name: "Count", Value: 5}},
-				gaugeStorage:   &map[string]dataclass.Metric[float64]{"test1": {Name: "TEst1", Value: 1}, "test2": {Name: "test2", Value: 2}}},
+				counterStorage: map[string]dataclass.Metric[int64]{"count": {Name: "Count", Value: 5}},
+				gaugeStorage:   map[string]dataclass.Metric[float64]{"test1": {Name: "TEst1", Value: 1}, "test2": {Name: "test2", Value: 2}}},
 			args: args{typeName: constants.MetricsTypeGauge, metricName: "Fake_Count"},
 			want: want{
 				code:        404,
@@ -114,8 +114,8 @@ func TestMetricHandler_GetValue(t *testing.T) {
 		{
 			name: "get gouge by name",
 			fields: fields{
-				counterStorage: &map[string]dataclass.Metric[int64]{"count": {Name: "Count", Value: 5}},
-				gaugeStorage:   &map[string]dataclass.Metric[float64]{"test1": {Name: "TEst1", Value: 1}, "test2": {Name: "test2", Value: 2}}},
+				counterStorage: map[string]dataclass.Metric[int64]{"count": {Name: "Count", Value: 5}},
+				gaugeStorage:   map[string]dataclass.Metric[float64]{"test1": {Name: "TEst1", Value: 1}, "test2": {Name: "test2", Value: 2}}},
 			args: args{typeName: constants.MetricsTypeGauge, metricName: "test1"},
 			want: want{
 				code:        200,
@@ -126,8 +126,8 @@ func TestMetricHandler_GetValue(t *testing.T) {
 		{
 			name: "get gouge by upercase name",
 			fields: fields{
-				counterStorage: &map[string]dataclass.Metric[int64]{"count": {Name: "Count", Value: 5}},
-				gaugeStorage:   &map[string]dataclass.Metric[float64]{"test1": {Name: "TEst1", Value: 1}, "test2": {Name: "test2", Value: 2}}},
+				counterStorage: map[string]dataclass.Metric[int64]{"count": {Name: "Count", Value: 5}},
+				gaugeStorage:   map[string]dataclass.Metric[float64]{"test1": {Name: "TEst1", Value: 1}, "test2": {Name: "test2", Value: 2}}},
 			args: args{typeName: constants.MetricsTypeGauge, metricName: "Test1"},
 			want: want{
 				code:        200,
@@ -138,8 +138,8 @@ func TestMetricHandler_GetValue(t *testing.T) {
 		{
 			name: "get counter by upercase name",
 			fields: fields{
-				counterStorage: &map[string]dataclass.Metric[int64]{"count": {Name: "Count", Value: 5}},
-				gaugeStorage:   &map[string]dataclass.Metric[float64]{"test1": {Name: "TEst1", Value: 1}, "test2": {Name: "test2", Value: 2}}},
+				counterStorage: map[string]dataclass.Metric[int64]{"count": {Name: "Count", Value: 5}},
+				gaugeStorage:   map[string]dataclass.Metric[float64]{"test1": {Name: "TEst1", Value: 1}, "test2": {Name: "test2", Value: 2}}},
 			args: args{typeName: constants.MetricsTypeCounter, metricName: "COUNT"},
 			want: want{
 				code:        200,
@@ -189,8 +189,8 @@ func TestMetricHandler_GetValue(t *testing.T) {
 
 func TestMetricHandler_GetAll(t *testing.T) {
 	type fields struct {
-		counterStorage *map[string]dataclass.Metric[int64]
-		gaugeStorage   *map[string]dataclass.Metric[float64]
+		counterStorage map[string]dataclass.Metric[int64]
+		gaugeStorage   map[string]dataclass.Metric[float64]
 	}
 
 	// определяем структуру теста
@@ -209,8 +209,8 @@ func TestMetricHandler_GetAll(t *testing.T) {
 		{
 			name: "positive test #1",
 			fields: fields{
-				counterStorage: &map[string]dataclass.Metric[int64]{"count": {Name: "Count", Value: 5}},
-				gaugeStorage:   &map[string]dataclass.Metric[float64]{"test1": {Name: "TEst1", Value: 1}, "test2": {Name: "test2", Value: 2}},
+				counterStorage: map[string]dataclass.Metric[int64]{"count": {Name: "Count", Value: 5}},
+				gaugeStorage:   map[string]dataclass.Metric[float64]{"test1": {Name: "TEst1", Value: 1}, "test2": {Name: "test2", Value: 2}},
 			},
 			want: want{
 				code:        200,
@@ -259,8 +259,8 @@ func TestMetricHandler_GetAll(t *testing.T) {
 
 func TestMetricHandler_Update(t *testing.T) {
 	type fields struct {
-		counterStorage *map[string]dataclass.Metric[int64]
-		gaugeStorage   *map[string]dataclass.Metric[float64]
+		counterStorage map[string]dataclass.Metric[int64]
+		gaugeStorage   map[string]dataclass.Metric[float64]
 	}
 
 	type args struct {
@@ -288,8 +288,8 @@ func TestMetricHandler_Update(t *testing.T) {
 		{
 			name: "add new metrics",
 			fields: fields{
-				counterStorage: &map[string]dataclass.Metric[int64]{},
-				gaugeStorage:   &map[string]dataclass.Metric[float64]{},
+				counterStorage: map[string]dataclass.Metric[int64]{},
+				gaugeStorage:   map[string]dataclass.Metric[float64]{},
 			},
 			args: []args{
 				{typeName: constants.MetricsTypeCounter, metricName: "Count", value: "10"},
@@ -309,8 +309,8 @@ func TestMetricHandler_Update(t *testing.T) {
 		{
 			name: "add incorect type metric",
 			fields: fields{
-				counterStorage: &map[string]dataclass.Metric[int64]{},
-				gaugeStorage:   &map[string]dataclass.Metric[float64]{},
+				counterStorage: map[string]dataclass.Metric[int64]{},
+				gaugeStorage:   map[string]dataclass.Metric[float64]{},
 			},
 			args: []args{
 				{typeName: "Gcounter", metricName: "Count", value: "10"},
@@ -327,8 +327,8 @@ func TestMetricHandler_Update(t *testing.T) {
 		{
 			name: "add incorect value metric",
 			fields: fields{
-				counterStorage: &map[string]dataclass.Metric[int64]{},
-				gaugeStorage:   &map[string]dataclass.Metric[float64]{},
+				counterStorage: map[string]dataclass.Metric[int64]{},
+				gaugeStorage:   map[string]dataclass.Metric[float64]{},
 			},
 			args: []args{
 				{typeName: constants.MetricsTypeCounter, metricName: "Count", value: "45jhkj"},
@@ -380,11 +380,11 @@ func TestMetricHandler_Update(t *testing.T) {
 				}
 			}
 			counterList := []dataclass.Metric[int64]{}
-			for _, val := range *tt.fields.counterStorage {
+			for _, val := range tt.fields.counterStorage {
 				counterList = append(counterList, val)
 			}
 			gaugeList := []dataclass.Metric[float64]{}
-			for _, val := range *tt.fields.gaugeStorage {
+			for _, val := range tt.fields.gaugeStorage {
 				gaugeList = append(gaugeList, val)
 			}
 			assert.ElementsMatch(t, gaugeList, tt.want.gaugeStorage)
@@ -395,8 +395,8 @@ func TestMetricHandler_Update(t *testing.T) {
 
 func TestMetricHandler_GetValueJSON(t *testing.T) {
 	type fields struct {
-		counterStorage *map[string]dataclass.Metric[int64]
-		gaugeStorage   *map[string]dataclass.Metric[float64]
+		counterStorage map[string]dataclass.Metric[int64]
+		gaugeStorage   map[string]dataclass.Metric[float64]
 	}
 
 	type args struct {
@@ -421,8 +421,8 @@ func TestMetricHandler_GetValueJSON(t *testing.T) {
 		{
 			name: "positive test #1",
 			fields: fields{
-				counterStorage: &map[string]dataclass.Metric[int64]{"count": {Name: "Count", Value: 5}},
-				gaugeStorage:   &map[string]dataclass.Metric[float64]{"test1": {Name: "TEst1", Value: 1}, "test2": {Name: "test2", Value: 2}},
+				counterStorage: map[string]dataclass.Metric[int64]{"count": {Name: "Count", Value: 5}},
+				gaugeStorage:   map[string]dataclass.Metric[float64]{"test1": {Name: "TEst1", Value: 1}, "test2": {Name: "test2", Value: 2}},
 			},
 			args: args{typeName: constants.MetricsTypeCounter, metricName: "Count"},
 			want: want{
@@ -434,8 +434,8 @@ func TestMetricHandler_GetValueJSON(t *testing.T) {
 		{
 			name: "positive test minus counter",
 			fields: fields{
-				counterStorage: &map[string]dataclass.Metric[int64]{"count": {Name: "Count", Value: -2345}},
-				gaugeStorage:   &map[string]dataclass.Metric[float64]{"test1": {Name: "TEst1", Value: 1}, "test2": {Name: "test2", Value: 2}},
+				counterStorage: map[string]dataclass.Metric[int64]{"count": {Name: "Count", Value: -2345}},
+				gaugeStorage:   map[string]dataclass.Metric[float64]{"test1": {Name: "TEst1", Value: 1}, "test2": {Name: "test2", Value: 2}},
 			},
 			args: args{typeName: constants.MetricsTypeCounter, metricName: "Count"},
 			want: want{
@@ -447,8 +447,8 @@ func TestMetricHandler_GetValueJSON(t *testing.T) {
 		{
 			name: "fake_type_counter should be 501 #1",
 			fields: fields{
-				counterStorage: &map[string]dataclass.Metric[int64]{"count": {Name: "Count", Value: 5}},
-				gaugeStorage:   &map[string]dataclass.Metric[float64]{"test1": {Name: "TEst1", Value: 1}, "test2": {Name: "test2", Value: 2}},
+				counterStorage: map[string]dataclass.Metric[int64]{"count": {Name: "Count", Value: 5}},
+				gaugeStorage:   map[string]dataclass.Metric[float64]{"test1": {Name: "TEst1", Value: 1}, "test2": {Name: "test2", Value: 2}},
 			},
 			args: args{typeName: "fake_counter", metricName: "Count"},
 			want: want{
@@ -460,8 +460,8 @@ func TestMetricHandler_GetValueJSON(t *testing.T) {
 		{
 			name: "incorect counter name",
 			fields: fields{
-				counterStorage: &map[string]dataclass.Metric[int64]{"count": {Name: "Count", Value: 5}},
-				gaugeStorage:   &map[string]dataclass.Metric[float64]{"test1": {Name: "TEst1", Value: 1}, "test2": {Name: "test2", Value: 2}},
+				counterStorage: map[string]dataclass.Metric[int64]{"count": {Name: "Count", Value: 5}},
+				gaugeStorage:   map[string]dataclass.Metric[float64]{"test1": {Name: "TEst1", Value: 1}, "test2": {Name: "test2", Value: 2}},
 			},
 			args: args{typeName: constants.MetricsTypeCounter, metricName: "Fake_Count"},
 			want: want{
@@ -473,8 +473,8 @@ func TestMetricHandler_GetValueJSON(t *testing.T) {
 		{
 			name: "incorect gouge name",
 			fields: fields{
-				counterStorage: &map[string]dataclass.Metric[int64]{"count": {Name: "Count", Value: 5}},
-				gaugeStorage:   &map[string]dataclass.Metric[float64]{"test1": {Name: "TEst1", Value: 1}, "test2": {Name: "test2", Value: 2}}},
+				counterStorage: map[string]dataclass.Metric[int64]{"count": {Name: "Count", Value: 5}},
+				gaugeStorage:   map[string]dataclass.Metric[float64]{"test1": {Name: "TEst1", Value: 1}, "test2": {Name: "test2", Value: 2}}},
 			args: args{typeName: constants.MetricsTypeGauge, metricName: "Fake_Count"},
 			want: want{
 				code:        404,
@@ -485,8 +485,8 @@ func TestMetricHandler_GetValueJSON(t *testing.T) {
 		{
 			name: "get gouge by name",
 			fields: fields{
-				counterStorage: &map[string]dataclass.Metric[int64]{"count": {Name: "Count", Value: 5}},
-				gaugeStorage:   &map[string]dataclass.Metric[float64]{"test1": {Name: "TEst1", Value: 1}, "test2": {Name: "test2", Value: 2}}},
+				counterStorage: map[string]dataclass.Metric[int64]{"count": {Name: "Count", Value: 5}},
+				gaugeStorage:   map[string]dataclass.Metric[float64]{"test1": {Name: "TEst1", Value: 1}, "test2": {Name: "test2", Value: 2}}},
 			args: args{typeName: constants.MetricsTypeGauge, metricName: "test1"},
 			want: want{
 				code:        200,
@@ -497,8 +497,8 @@ func TestMetricHandler_GetValueJSON(t *testing.T) {
 		{
 			name: "get gouge by upercase name",
 			fields: fields{
-				counterStorage: &map[string]dataclass.Metric[int64]{"count": {Name: "Count", Value: 5}},
-				gaugeStorage:   &map[string]dataclass.Metric[float64]{"test1": {Name: "TEst1", Value: 1}, "test2": {Name: "test2", Value: 2}}},
+				counterStorage: map[string]dataclass.Metric[int64]{"count": {Name: "Count", Value: 5}},
+				gaugeStorage:   map[string]dataclass.Metric[float64]{"test1": {Name: "TEst1", Value: 1}, "test2": {Name: "test2", Value: 2}}},
 			args: args{typeName: constants.MetricsTypeGauge, metricName: "Test1"},
 			want: want{
 				code:        200,
@@ -509,8 +509,8 @@ func TestMetricHandler_GetValueJSON(t *testing.T) {
 		{
 			name: "get counter by upercase name",
 			fields: fields{
-				counterStorage: &map[string]dataclass.Metric[int64]{"count": {Name: "Count", Value: 5}},
-				gaugeStorage:   &map[string]dataclass.Metric[float64]{"test1": {Name: "TEst1", Value: 1}, "test2": {Name: "test2", Value: 2}}},
+				counterStorage: map[string]dataclass.Metric[int64]{"count": {Name: "Count", Value: 5}},
+				gaugeStorage:   map[string]dataclass.Metric[float64]{"test1": {Name: "TEst1", Value: 1}, "test2": {Name: "test2", Value: 2}}},
 			args: args{typeName: constants.MetricsTypeCounter, metricName: "COUNT"},
 			want: want{
 				code:        200,
