@@ -19,7 +19,7 @@ import (
 	"github.com/go-chi/chi"
 )
 
-// MetricHandler - structure for handling metrics 
+// MetricHandler - structure for handling metrics
 type MetricHandler struct {
 	counterRepo repository.MetricRepository[int64]
 	gaugeRepo   repository.MetricRepository[float64]
@@ -40,6 +40,7 @@ func NewMetricHandler(app *config.AppConfig, db *sql.DB) MetricHandler {
 	}
 	return result
 }
+
 // Update - GET request for updating metrics from queryParams
 func (h *MetricHandler) Update(w http.ResponseWriter, r *http.Request) {
 	typeMetric := strings.ToLower(chi.URLParam(r, "type"))
@@ -71,6 +72,7 @@ func (h *MetricHandler) Update(w http.ResponseWriter, r *http.Request) {
 	h.writeToFileIfNeeded()
 	w.WriteHeader(http.StatusOK)
 }
+
 // UpdateJSON - POST method for updating metrics by json
 func (h *MetricHandler) UpdateJSON(w http.ResponseWriter, r *http.Request) {
 	if !validateContentTypeIsJSON(w, r) {
@@ -124,7 +126,8 @@ func (h *MetricHandler) UpdateJSON(w http.ResponseWriter, r *http.Request) {
 	h.writeToFileIfNeeded()
 	responseJSON(w, &model)
 }
-//UpdateBatch - POST request. Update batch metrics
+
+// UpdateBatch - POST request. Update batch metrics
 func (h *MetricHandler) UpdateBatch(w http.ResponseWriter, r *http.Request) {
 	if !validateContentTypeIsJSON(w, r) {
 		return
@@ -224,6 +227,7 @@ func (h *MetricHandler) GetValue(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(result))
 }
+
 // GetJSONValue - get metrics json format
 func (h *MetricHandler) GetJSONValue(w http.ResponseWriter, r *http.Request) {
 	if !validateContentTypeIsJSON(w, r) {
@@ -275,7 +279,7 @@ func (h *MetricHandler) GetJSONValue(w http.ResponseWriter, r *http.Request) {
 	responseJSON(w, model)
 }
 
-//Get - get request for getting all metrics in html
+// Get - get request for getting all metrics in html
 func (h *MetricHandler) Get(w http.ResponseWriter, r *http.Request) {
 	counterList, err := h.counterRepo.GetAll()
 	if err != nil {
@@ -297,7 +301,7 @@ func (h *MetricHandler) Get(w http.ResponseWriter, r *http.Request) {
 	render.Render(w, "home.html", &models.TemplateDate{Data: map[string]any{"metrics": result}})
 }
 
-//Ping - request for ping DB
+// Ping - request for ping DB
 func (h *MetricHandler) Ping(w http.ResponseWriter, r *http.Request) {
 	err := h.db.Ping()
 	if err != nil {
