@@ -7,12 +7,15 @@ import (
 	"github.com/fdanis/ygtrack/internal/server/config"
 	"github.com/fdanis/ygtrack/internal/server/handler"
 	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/middleware"
 )
 
 func Routes(app *config.AppConfig, db *sql.DB) http.Handler {
 	metricHandler := handler.NewMetricHandler(app, db)
 	mux := chi.NewRouter()
 	mux.Use(GzipHandle)
+	mux.Mount("/debug", middleware.Profiler())
+
 	mux.Post("/update/{type}/{name}/{value}", metricHandler.Update)
 	mux.Post("/update/", metricHandler.UpdateJSON)
 	mux.Post("/update", metricHandler.UpdateJSON)
@@ -22,5 +25,6 @@ func Routes(app *config.AppConfig, db *sql.DB) http.Handler {
 	mux.Get("/value/{type}/{name}", metricHandler.GetValue)
 	mux.Get("/", metricHandler.Get)
 	mux.Get("/ping", metricHandler.Ping)
+
 	return mux
 }

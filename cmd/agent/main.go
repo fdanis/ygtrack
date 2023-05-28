@@ -32,6 +32,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	m := memstat.NewMetricService(config.Key)
 	s := memstat.NewSenderMetric()
 	ctx, cancel := context.WithCancel(context.Background())
@@ -92,6 +93,7 @@ func Send(ctx context.Context, conf agent.Conf, m *memstat.MetricService, s *mem
 						break
 					}
 				}
+				log.Println("sending")
 				s.Send("http://"+strings.TrimRight(conf.Address, "/")+"/update", metrics)
 			}
 		case <-ctx.Done():

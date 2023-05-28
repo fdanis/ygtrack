@@ -19,6 +19,7 @@ import (
 	"github.com/go-chi/chi"
 )
 
+// MetricHandler - structure for handling metrics
 type MetricHandler struct {
 	counterRepo repository.MetricRepository[int64]
 	gaugeRepo   repository.MetricRepository[float64]
@@ -40,6 +41,7 @@ func NewMetricHandler(app *config.AppConfig, db *sql.DB) MetricHandler {
 	return result
 }
 
+// Update - GET request for updating metrics from queryParams
 func (h *MetricHandler) Update(w http.ResponseWriter, r *http.Request) {
 	typeMetric := strings.ToLower(chi.URLParam(r, "type"))
 	nameMetric := chi.URLParam(r, "name")
@@ -58,7 +60,7 @@ func (h *MetricHandler) Update(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Incorrect value", http.StatusBadRequest)
 			return
 		}
-		_, err = h.AddCounter(nameMetric, val)
+		_, err = h.addCounter(nameMetric, val)
 		if err != nil {
 			http.Error(w, "Incorrect value", http.StatusInternalServerError)
 			return
@@ -67,10 +69,11 @@ func (h *MetricHandler) Update(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Incorrect type", http.StatusNotImplemented)
 		return
 	}
-	h.WriteToFileIfNeeded()
+	h.writeToFileIfNeeded()
 	w.WriteHeader(http.StatusOK)
 }
 
+// UpdateJSON - POST method for updating metrics by json
 func (h *MetricHandler) UpdateJSON(w http.ResponseWriter, r *http.Request) {
 	if !validateContentTypeIsJSON(w, r) {
 		return
@@ -103,7 +106,7 @@ func (h *MetricHandler) UpdateJSON(w http.ResponseWriter, r *http.Request) {
 		if model.Delta == nil {
 			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		}
-		val, err := h.AddCounter(model.ID, *model.Delta)
+		val, err := h.addCounter(model.ID, *model.Delta)
 		if err != nil {
 			http.Error(w, "Server error", http.StatusInternalServerError)
 			return
@@ -120,10 +123,11 @@ func (h *MetricHandler) UpdateJSON(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	h.WriteToFileIfNeeded()
+	h.writeToFileIfNeeded()
 	responseJSON(w, &model)
 }
 
+// UpdateBatch - POST request. Update batch metrics
 func (h *MetricHandler) UpdateBatch(w http.ResponseWriter, r *http.Request) {
 	if !validateContentTypeIsJSON(w, r) {
 		return
@@ -187,20 +191,8 @@ func (h *MetricHandler) UpdateBatch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	tx.Commit()
-	h.WriteToFileIfNeeded()
+	h.writeToFileIfNeeded()
 	w.WriteHeader(http.StatusOK)
-}
-
-func (h *MetricHandler) AddCounter(name string, val int64) (int64, error) {
-	oldValue, err := h.counterRepo.GetByName(name)
-	if err != nil {
-		return 0, err
-	}
-	if oldValue != nil {
-		val += oldValue.Value
-	}
-	h.counterRepo.Add(dataclass.Metric[int64]{Name: name, Value: val})
-	return val, nil
 }
 
 func (h *MetricHandler) GetValue(w http.ResponseWriter, r *http.Request) {
@@ -236,6 +228,7 @@ func (h *MetricHandler) GetValue(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(result))
 }
 
+// GetJSONValue - get metrics json format
 func (h *MetricHandler) GetJSONValue(w http.ResponseWriter, r *http.Request) {
 	if !validateContentTypeIsJSON(w, r) {
 		return
@@ -286,6 +279,7 @@ func (h *MetricHandler) GetJSONValue(w http.ResponseWriter, r *http.Request) {
 	responseJSON(w, model)
 }
 
+// Get - get request for getting all metrics in html
 func (h *MetricHandler) Get(w http.ResponseWriter, r *http.Request) {
 	counterList, err := h.counterRepo.GetAll()
 	if err != nil {
@@ -307,6 +301,7 @@ func (h *MetricHandler) Get(w http.ResponseWriter, r *http.Request) {
 	render.Render(w, "home.html", &models.TemplateDate{Data: map[string]any{"metrics": result}})
 }
 
+// Ping - request for ping DB
 func (h *MetricHandler) Ping(w http.ResponseWriter, r *http.Request) {
 	err := h.db.Ping()
 	if err != nil {
@@ -314,8 +309,20 @@ func (h *MetricHandler) Ping(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *MetricHandler) WriteToFileIfNeeded() {
+func (h *MetricHandler) writeToFileIfNeeded() {
 	if h.ch != nil {
 		*h.ch <- 1
 	}
+}
+
+func (h *MetricHandler) addCounter(name string, val int64) (int64, error) {
+	oldValue, err := h.counterRepo.GetByName(name)
+	if err != nil {
+		return 0, err
+	}
+	if oldValue != nil {
+		val += oldValue.Value
+	}
+	h.counterRepo.Add(dataclass.Metric[int64]{Name: name, Value: val})
+	return val, nil
 }

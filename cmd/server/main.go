@@ -15,6 +15,8 @@ import (
 	"github.com/fdanis/ygtrack/internal/server/store/repository/metricrepository"
 	"github.com/fdanis/ygtrack/internal/server/store/repository/pgxmetricrepository"
 
+	_ "net/http/pprof"
+
 	_ "github.com/golang-migrate/migrate/source/file"
 )
 
@@ -76,11 +78,10 @@ func main() {
 		Addr:    app.Parameters.Address,
 		Handler: server.Routes(&app, db),
 	}
+
 	log.Printf("server started at %s\n", app.Parameters.Address)
 	err = server.ListenAndServe()
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	log.Println("server stoped")
 }
