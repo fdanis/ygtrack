@@ -25,8 +25,15 @@ func TestSimpleMemStatService_Update(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			res := NewMetricService("")
 			res.Update()
-			assert.NotEqual(t, float64(res.gaugeDictionary["Alloc"]), 0, "alloc property not valid")
-			assert.Equal(t, tt.wantPool, res.countDictionary[pollCount], "uint property  not valid")
+			assert.NotEqual(t, res.gaugeDictionary["Alloc"], 0, "alloc property not valid")
+			assert.Equal(t, tt.wantPool, res.countValue, "uint property  not valid")
 		})
+	}
+}
+
+func BenchmarkSimpleMemStatService_Update(b *testing.B) {
+	res := NewMetricService("")
+	for i := 0; i < b.N; i++ {
+		res.Update()
 	}
 }
