@@ -18,7 +18,15 @@ import (
 	_ "github.com/golang-migrate/migrate/source/file"
 )
 
+//go:generate go run ../generator/genvar.go string
+var (
+	buildVersion string
+	buildDate    string
+	buildCommit  string
+)
+
 func main() {
+	printInfoVar()
 	app := config.AppConfig{}
 	//read environments
 	app.Parameters.ReadFlags()
@@ -35,7 +43,7 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
-		defer db.Close()	
+		defer db.Close()
 	}
 
 	//initialize html template

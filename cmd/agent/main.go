@@ -17,6 +17,13 @@ import (
 	//"github.com/fdanis/ygtrack/internal/helpers/fakehttphelper"
 )
 
+//go:generate go run ../generator/genvar.go string
+var (
+	buildVersion string
+	buildDate    string
+	buildCommit  string
+)
+
 func main() {
 	config := agent.Conf{}
 	agent.ReadFlags(&config)
@@ -29,6 +36,7 @@ func main() {
 	s := memstat.NewSenderMetric()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+	printInfoVar()
 	go Update(ctx, config.PollInterval, m)
 	go UpdateGopsUtil(ctx, config.PollInterval, m)
 	go Send(ctx, config, m, s)
