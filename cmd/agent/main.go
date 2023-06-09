@@ -55,11 +55,6 @@ func main() {
 		if !ok {
 			log.Fatalf("got unexpected key type: %T", rsaKey)
 		}
-
-		if err != nil {
-			log.Fatal(err)
-			panic("can not read public key")
-		}
 		s.PublicKey = rsaKey
 	}
 	ctx, cancel := context.WithCancel(context.Background())
