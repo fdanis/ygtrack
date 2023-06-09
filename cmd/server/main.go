@@ -42,7 +42,7 @@ func main() {
 		log.Println("Read Env Error")
 		log.Fatalln(err)
 	}
-	app.Parameters.LoadFromConfigFile(file)
+	app.Parameters.LoadFromConfigFile(*file)
 
 	var db *sql.DB
 	if app.Parameters.ConnectionString != "" {

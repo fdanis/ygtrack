@@ -35,7 +35,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	config.LoadFromConfigFile(f)
+	config.LoadFromConfigFile(*f)
 
 	m := memstat.NewMetricService(config.Key)
 	s := memstat.NewSenderMetric()

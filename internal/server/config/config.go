@@ -44,8 +44,7 @@ func (c *Environment) ReadEnv() error {
 	return env.Parse(c)
 }
 
-func (c *Environment) ReadFlags() string {
-
+func (c *Environment) ReadFlags() *string {
 	flag.StringVar(&c.Address, "a", ":8080", "host for server")
 	flag.BoolVar(&c.Restore, "r", false, "restore data from file")
 	flag.DurationVar(&c.StoreInterval, "i", time.Second*2, "interval fo saving data to file")
@@ -55,7 +54,7 @@ func (c *Environment) ReadFlags() string {
 	flag.StringVar(&c.CryptoKey, "crypto-key", "", "crypto-key")
 	file := ""
 	flag.StringVar(&file, "c", "", "file for config")
-	return file
+	return &file
 }
 
 func (app *AppConfig) InitFileStorage(ctx context.Context) error {
@@ -141,12 +140,14 @@ func (c *Environment) LoadFromConfigFile(file string) {
 		var tmpConf Environment
 		data, err := os.ReadFile(file)
 		if err != nil {
-			panic("config file does not exists")
+			log.Fatal(err)
 		}
 		dec := json.NewDecoder(bytes.NewReader(data))
 		if err = dec.Decode(&tmpConf); err != nil {
-			panic("config file not correct")
+			log.Fatal(err)
 		}
+
+		log.Printf("store interval %v", tmpConf.StoreInterval)
 		if c.Address == "" {
 			c.Address = tmpConf.Address
 		}
@@ -166,4 +167,22 @@ func (c *Environment) LoadFromConfigFile(file string) {
 			c.StoreFile = tmpConf.CryptoKey
 		}
 	}
+}
+func (c *Environment) UnmarshalJSON(data []byte) error {
+	type EnvironmentAlias Environment
+	aliasValue := &struct {
+		*EnvironmentAlias
+		StoreInterval string `json:"store_interval"`
+	}{
+		EnvironmentAlias: (*EnvironmentAlias)(c),
+	}
+	if err := json.Unmarshal(data, aliasValue); err != nil {
+		return err
+	}
+	intr, err := time.ParseDuration(aliasValue.StoreInterval)
+	if err != nil {
+		return err
+	}
+	c.StoreInterval = intr
+	return nil
 }

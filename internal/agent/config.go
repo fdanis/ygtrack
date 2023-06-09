@@ -27,7 +27,7 @@ func ReadEnv(config *Conf) error {
 }
 
 // ReadFlags inits flags and return config path
-func ReadFlags(config *Conf) string {
+func ReadFlags(config *Conf) *string {
 	flag.StringVar(&config.Address, "a", "localhost:8080", "host for server")
 	flag.StringVar(&config.Key, "k", "", "key for hash function")
 	flag.StringVar(&config.CryptoKey, "crypto-key", "", "key for hash function")
@@ -36,7 +36,7 @@ func ReadFlags(config *Conf) string {
 
 	file := ""
 	flag.StringVar(&file, "c", "", "file for config")
-	return file
+	return &file
 }
 
 func (c *Conf) LoadFromConfigFile(file string) {
@@ -50,7 +50,6 @@ func (c *Conf) LoadFromConfigFile(file string) {
 		if err = dec.Decode(&tmpConf); err != nil {
 			panic("config file not correct")
 		}
-
 		if c.Address == "" {
 			c.Address = tmpConf.Address
 		}
@@ -64,4 +63,29 @@ func (c *Conf) LoadFromConfigFile(file string) {
 			c.ReportInterval = tmpConf.ReportInterval
 		}
 	}
+}
+
+func (c *Conf) UnmarshalJSON(data []byte) error {
+	type ConfAlias Conf
+	aliasValue := &struct {
+		*ConfAlias
+		PollInterval   string `json:"poll_interval"`
+		ReportInterval string `json:"report_interval"`
+	}{
+		ConfAlias: (*ConfAlias)(c),
+	}
+	if err := json.Unmarshal(data, aliasValue); err != nil {
+		return err
+	}
+	p, err := time.ParseDuration(aliasValue.PollInterval)
+	if err != nil {
+		return err
+	}
+	c.PollInterval = p
+	r, err := time.ParseDuration(aliasValue.ReportInterval)
+	if err != nil {
+		return err
+	}
+	c.PollInterval = r
+	return nil
 }
