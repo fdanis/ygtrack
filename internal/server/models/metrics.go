@@ -57,7 +57,7 @@ func (m *Metrics) SetHash(hash string) {
 
 func (m Metrics) String() string {
 	if m.MType == constants.MetricsTypeCounter {
-		return fmt.Sprintf("%s:%s:%d", m.ID, constants.MetricsTypeCounter, *m.Delta)
+		return fmt.Sprintf("%s:%s:%d", m.ID, m.MType, *m.Delta)
 	}
-	return fmt.Sprintf("%s:%s:%f", m.ID, constants.MetricsTypeGauge, *m.Value)
+	return fmt.Sprintf("%s:%s:%f", m.ID, m.MType, *m.Value)
 }

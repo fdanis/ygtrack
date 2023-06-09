@@ -3,6 +3,10 @@ package main
 import (
 	"context"
 	"database/sql"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"flag"
 	"log"
@@ -31,13 +35,14 @@ func main() {
 	printInfoVar()
 	app := config.AppConfig{}
 	//read environments
-	app.Parameters.ReadFlags()
+	file := app.Parameters.ReadFlags()
 	flag.Parse()
 	err := app.Parameters.ReadEnv()
 	if err != nil {
 		log.Println("Read Env Error")
 		log.Fatalln(err)
 	}
+	app.Parameters.LoadFromConfigFile(file)
 
 	var db *sql.DB
 	if app.Parameters.ConnectionString != "" {
@@ -80,8 +85,17 @@ func main() {
 	}
 
 	log.Printf("server started at %s\n", app.Parameters.Address)
-	err = server.ListenAndServe()
-	if err != nil {
-		log.Fatal(err)
-	}
+	go func() {
+		err = server.ListenAndServe()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}()
+
+	sig := make(chan os.Signal, 1)
+	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+	<-sig
+	server.Shutdown(ctx)
+	// wait 2 second for server shutdown
+	time.Sleep(time.Second * 2)
 }
