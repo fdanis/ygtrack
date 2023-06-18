@@ -14,6 +14,7 @@ import (
 
 	"github.com/fdanis/ygtrack/internal/constants"
 	"github.com/fdanis/ygtrack/internal/server/config"
+	"github.com/fdanis/ygtrack/internal/server/metricsservice"
 	"github.com/fdanis/ygtrack/internal/server/models"
 	"github.com/fdanis/ygtrack/internal/server/render"
 	"github.com/fdanis/ygtrack/internal/server/store/dataclass"
@@ -161,7 +162,7 @@ func TestMetricHandler_GetValue(t *testing.T) {
 			cr.Datastorage = tt.fields.counterStorage
 			gr := metricrepository.MetricRepository[float64]{}
 			gr.Datastorage = tt.fields.gaugeStorage
-			metricHandler := MetricHandler{counterRepo: &cr, gaugeRepo: &gr}
+			metricHandler := MetricHandler{service: metricsservice.NewMetricsService(&config.AppConfig{CounterRepository: &cr, GaugeRepository: &gr}, nil)}
 
 			h := http.HandlerFunc(metricHandler.GetValue)
 			h.ServeHTTP(w, request)
@@ -237,7 +238,7 @@ func TestMetricHandler_GetAll(t *testing.T) {
 			cr.Datastorage = tt.fields.counterStorage
 			gr := metricrepository.MetricRepository[float64]{}
 			gr.Datastorage = tt.fields.gaugeStorage
-			metricHandler := MetricHandler{counterRepo: &cr, gaugeRepo: &gr}
+			metricHandler := MetricHandler{service: metricsservice.NewMetricsService(&config.AppConfig{CounterRepository: &cr, GaugeRepository: &gr}, nil)}
 
 			h := http.HandlerFunc(metricHandler.Get)
 			h.ServeHTTP(w, request)
@@ -354,7 +355,7 @@ func TestMetricHandler_Update(t *testing.T) {
 			cr.Datastorage = tt.fields.counterStorage
 			gr := metricrepository.MetricRepository[float64]{}
 			gr.Datastorage = tt.fields.gaugeStorage
-			metricHandler := MetricHandler{counterRepo: &cr, gaugeRepo: &gr}
+			metricHandler := MetricHandler{service: metricsservice.NewMetricsService(&config.AppConfig{CounterRepository: &cr, GaugeRepository: &gr}, nil)}
 			for _, arg := range tt.args {
 				request := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/update/%s/%s/%s", arg.typeName, arg.metricName, arg.value), nil)
 				rctx := chi.NewRouteContext()
@@ -533,7 +534,7 @@ func TestMetricHandler_GetValueJSON(t *testing.T) {
 			cr.Datastorage = tt.fields.counterStorage
 			gr := metricrepository.MetricRepository[float64]{}
 			gr.Datastorage = tt.fields.gaugeStorage
-			metricHandler := MetricHandler{counterRepo: &cr, gaugeRepo: &gr}
+			metricHandler := MetricHandler{service: metricsservice.NewMetricsService(&config.AppConfig{CounterRepository: &cr, GaugeRepository: &gr}, nil)}
 
 			h := http.HandlerFunc(metricHandler.GetJSONValue)
 			h.ServeHTTP(w, request)

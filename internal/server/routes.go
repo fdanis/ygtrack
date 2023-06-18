@@ -6,14 +6,20 @@ import (
 
 	"github.com/fdanis/ygtrack/internal/server/config"
 	"github.com/fdanis/ygtrack/internal/server/handler"
+	"github.com/fdanis/ygtrack/internal/server/metricsservice"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 )
 
-func Routes(app *config.AppConfig, db *sql.DB) http.Handler {
-	metricHandler := handler.NewMetricHandler(app, db)
+func Routes(app *config.AppConfig, db *sql.DB, metricservice *metricsservice.MetricsService) http.Handler {
+	metricHandler := handler.NewMetricHandler(metricservice, app.Parameters.Key, db)
 	mux := chi.NewRouter()
+	if app.Parameters.TrustedSubnet != "" {
+		ipfilter := NewIpFilterMiddleware(app.Parameters.TrustedSubnet)
+		mux.Use(ipfilter.Filter)
+	}
 	mux.Use(GzipHandle)
+
 	mux.Mount("/debug", middleware.Profiler())
 
 	mux.Post("/update/{type}/{name}/{value}", metricHandler.Update)

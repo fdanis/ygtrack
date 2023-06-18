@@ -116,6 +116,7 @@ func (m *MetricService) UpdateGopsUtil() {
 }
 
 func (m *MetricService) setAllMetrics() {
+	log.Println("metrics was updated")
 	allmetrics := make([]*models.Metrics, 0, len(m.gaugeDictionary)+1)
 	for key, val := range m.gaugeDictionary {
 		v := val

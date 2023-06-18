@@ -16,6 +16,7 @@ type Conf struct {
 	ReportInterval time.Duration `env:"REPORT_INTERVAL" json:"report_interval"`
 	CryptoKey      string        `env:"CRYPTO_KEY" json:"crypto_key"`
 	Key            string        `env:"KEY"`
+	UseGrpc        bool          `env:"USE_GRPC"`
 }
 
 func ReadEnv(config *Conf) error {
@@ -33,6 +34,7 @@ func ReadFlags(config *Conf) *string {
 	flag.StringVar(&config.CryptoKey, "crypto-key", "", "key for hash function")
 	flag.DurationVar(&config.PollInterval, "p", time.Second*2, "interval fo pooling metrics")
 	flag.DurationVar(&config.ReportInterval, "r", time.Second*10, "interval fo report")
+	flag.BoolVar(&config.UseGrpc, "g", false, "use grpc connection")
 
 	file := ""
 	flag.StringVar(&file, "c", "", "file for config")
