@@ -2,6 +2,9 @@ package main
 
 import (
 	"context"
+	"crypto/rsa"
+	"crypto/x509"
+	"encoding/pem"
 	"flag"
 	"fmt"
 	"log"
@@ -26,15 +29,34 @@ var (
 
 func main() {
 	config := agent.Conf{}
-	agent.ReadFlags(&config)
+	f := agent.ReadFlags(&config)
 	flag.Parse()
 	err := agent.ReadEnv(&config)
 	if err != nil {
 		log.Fatal(err)
 	}
+	config.LoadFromConfigFile(*f)
 
 	m := memstat.NewMetricService(config.Key)
 	s := memstat.NewSenderMetric()
+
+	if config.CryptoKey != "" {
+		data, err := os.ReadFile(config.CryptoKey)
+		if err != nil {
+			panic("config file does not exists")
+		}
+		block, _ := pem.Decode([]byte(data))
+		key, err := x509.ParsePKIXPublicKey(block.Bytes)
+		if err != nil {
+			panic(err)
+		}
+
+		rsaKey, ok := key.(*rsa.PublicKey)
+		if !ok {
+			log.Fatalf("got unexpected key type: %T", rsaKey)
+		}
+		s.PublicKey = rsaKey
+	}
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	printInfoVar()
@@ -43,7 +65,7 @@ func main() {
 	go Send(ctx, config, m, s)
 
 	sig := make(chan os.Signal, 1)
-	signal.Notify(sig, syscall.SIGINT)
+	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 	<-sig
 
 	fmt.Println("exit")

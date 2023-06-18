@@ -1,8 +1,10 @@
 package config
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -29,25 +31,30 @@ type AppConfig struct {
 }
 
 type Environment struct {
-	Address          string        `env:"ADDRESS"`
-	StoreInterval    time.Duration `env:"STORE_INTERVAL"`
-	StoreFile        string        `env:"STORE_FILE"`
-	Restore          bool          `env:"RESTORE"`
+	Address          string        `env:"ADDRESS" json:"address"`
+	StoreInterval    time.Duration `env:"STORE_INTERVAL" json:"store_interval"`
+	StoreFile        string        `env:"STORE_FILE" json:"store_file"`
+	Restore          bool          `env:"RESTORE" json:"restore"`
 	Key              string        `env:"KEY"`
-	ConnectionString string        `env:"DATABASE_DSN"`
+	ConnectionString string        `env:"DATABASE_DSN" json:"database_dsn"`
+	CryptoKey        string        `env:"CRYPTO_KEY" json:"crypto_key"`
 }
 
 func (c *Environment) ReadEnv() error {
 	return env.Parse(c)
 }
 
-func (c *Environment) ReadFlags() {
+func (c *Environment) ReadFlags() *string {
 	flag.StringVar(&c.Address, "a", ":8080", "host for server")
 	flag.BoolVar(&c.Restore, "r", false, "restore data from file")
 	flag.DurationVar(&c.StoreInterval, "i", time.Second*2, "interval fo saving data to file")
 	flag.StringVar(&c.StoreFile, "f", "/tmp/devops-metrics-db.json", "file path")
 	flag.StringVar(&c.Key, "k", "", "hash key")
 	flag.StringVar(&c.ConnectionString, "d", "", "connection string")
+	flag.StringVar(&c.CryptoKey, "crypto-key", "", "crypto-key")
+	file := ""
+	flag.StringVar(&file, "c", "", "file for config")
+	return &file
 }
 
 func (app *AppConfig) InitFileStorage(ctx context.Context) error {
@@ -125,5 +132,57 @@ func (app *AppConfig) InitDataBaseStorage() error {
 		}
 		go filesync.Sync(ctx, app.Parameters.StoreFile, app.ChForSyncWithFile, app.CounterRepository, app.GaugeRepository)
 	}
+	return nil
+}
+
+func (c *Environment) LoadFromConfigFile(file string) {
+	if file != "" {
+		var tmpConf Environment
+		data, err := os.ReadFile(file)
+		if err != nil {
+			log.Fatal(err)
+		}
+		dec := json.NewDecoder(bytes.NewReader(data))
+		if err = dec.Decode(&tmpConf); err != nil {
+			log.Fatal(err)
+		}
+
+		log.Printf("store interval %v", tmpConf.StoreInterval)
+		if c.Address == "" {
+			c.Address = tmpConf.Address
+		}
+		if c.CryptoKey == "" {
+			c.CryptoKey = tmpConf.CryptoKey
+		}
+		if c.StoreInterval == 0 {
+			c.StoreInterval = tmpConf.StoreInterval
+		}
+		if c.ConnectionString == "" {
+			c.ConnectionString = tmpConf.ConnectionString
+		}
+		if c.StoreFile == "" {
+			c.StoreFile = tmpConf.StoreFile
+		}
+		if c.CryptoKey == "" {
+			c.StoreFile = tmpConf.CryptoKey
+		}
+	}
+}
+func (c *Environment) UnmarshalJSON(data []byte) error {
+	type EnvironmentAlias Environment
+	aliasValue := &struct {
+		*EnvironmentAlias
+		StoreInterval string `json:"store_interval"`
+	}{
+		EnvironmentAlias: (*EnvironmentAlias)(c),
+	}
+	if err := json.Unmarshal(data, aliasValue); err != nil {
+		return err
+	}
+	intr, err := time.ParseDuration(aliasValue.StoreInterval)
+	if err != nil {
+		return err
+	}
+	c.StoreInterval = intr
 	return nil
 }

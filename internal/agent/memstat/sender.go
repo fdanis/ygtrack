@@ -2,6 +2,9 @@ package memstat
 
 import (
 	"bytes"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -17,6 +20,7 @@ type SenderMetric struct {
 	send         func(client *http.Client, url string, header map[string]string, data *bytes.Buffer) error
 	httpclient   *http.Client
 	SendersCount int
+	PublicKey    *rsa.PublicKey
 }
 
 func NewSenderMetric() *SenderMetric {
@@ -27,6 +31,22 @@ func NewSenderMetric() *SenderMetric {
 	return s
 }
 
+func (s *SenderMetric) Encription(data *bytes.Buffer) (*bytes.Buffer, error) {
+	if s.PublicKey == nil {
+		return data, nil
+	}
+	encryptedBytes, err := rsa.EncryptOAEP(
+		sha256.New(),
+		rand.Reader,
+		s.PublicKey,
+		data.Bytes(),
+		nil)
+	if err != nil {
+		return nil, err
+	}
+	return bytes.NewBuffer(encryptedBytes), nil
+}
+
 func (s *SenderMetric) Send(url string, metrics []*models.Metrics) {
 	g := errgroup.Group{}
 	recordCh := make(chan *bytes.Buffer)
@@ -34,6 +54,10 @@ func (s *SenderMetric) Send(url string, metrics []*models.Metrics) {
 		w := &sendWorker{
 			ch: recordCh,
 			send: func(data *bytes.Buffer) error {
+				data, err := s.Encription(data)
+				if err != nil {
+					return err
+				}
 				return s.send(s.httpclient, url, map[string]string{"Content-Type": "application/json"}, data)
 			},
 		}
@@ -61,8 +85,8 @@ func (s *SenderMetric) SendBatch(url string, metrics models.Metrics) {
 		return
 	}
 
-	var buf bytes.Buffer
-	w := io.Writer(&buf)
+	var buf *bytes.Buffer
+	w := io.Writer(buf)
 	gz := helpers.GetPool().GetWriter(w)
 	defer helpers.GetPool().PutWriter(gz)
 	_, err = gz.Write(d)
@@ -71,7 +95,12 @@ func (s *SenderMetric) SendBatch(url string, metrics models.Metrics) {
 	}
 	gz.Flush()
 
-	err = s.send(s.httpclient, url, map[string]string{"Content-Type": "application/json", "Content-Encoding": "gzip"}, &buf)
+	buf, err = s.Encription(buf)
+	if err != nil {
+		log.Println("can not encrypt")
+	}
+
+	err = s.send(s.httpclient, url, map[string]string{"Content-Type": "application/json", "Content-Encoding": "gzip"}, buf)
 	if err != nil {
 		log.Println("can not send batch")
 	}

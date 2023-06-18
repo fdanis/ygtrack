@@ -121,12 +121,13 @@ func (m *MetricService) setAllMetrics() {
 		v := val
 		allmetrics = append(allmetrics, &models.Metrics{ID: key, MType: constants.MetricsTypeGauge, Value: &v})
 	}
-	m.allmetrics = allmetrics
+	counter := m.countValue
+	m.allmetrics = append(allmetrics, &models.Metrics{ID: pollCount, MType: constants.MetricsTypeCounter, Delta: &counter})
 }
 
 func (m *MetricService) GetMetrics() []*models.Metrics {
 	if m.allmetrics == nil {
 		return nil
 	}
-	return append(m.allmetrics, &models.Metrics{ID: pollCount, MType: constants.MetricsTypeCounter, Delta: &m.countValue})
+	return m.allmetrics
 }

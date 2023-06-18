@@ -97,6 +97,8 @@ func (h *MetricHandler) UpdateJSON(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		}
 		if hash != model.Hash {
+
+			log.Printf("hash != model.Hash; %s != %s; %#v", hash, model.Hash, model)
 			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		}
 	}
@@ -104,6 +106,7 @@ func (h *MetricHandler) UpdateJSON(w http.ResponseWriter, r *http.Request) {
 	switch model.MType {
 	case constants.MetricsTypeCounter:
 		if model.Delta == nil {
+			log.Printf("model.Delta == nil; %v", model)
 			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		}
 		val, err := h.addCounter(model.ID, *model.Delta)
@@ -114,6 +117,7 @@ func (h *MetricHandler) UpdateJSON(w http.ResponseWriter, r *http.Request) {
 		model.Delta = &val
 	case constants.MetricsTypeGauge:
 		if model.Value == nil {
+			log.Printf("model.Value == nil; %v", model)
 			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		}
 		err := h.gaugeRepo.Add(dataclass.Metric[float64]{Name: model.ID, Value: *model.Value})

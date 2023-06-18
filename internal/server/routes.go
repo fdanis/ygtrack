@@ -17,11 +17,24 @@ func Routes(app *config.AppConfig, db *sql.DB) http.Handler {
 	mux.Mount("/debug", middleware.Profiler())
 
 	mux.Post("/update/{type}/{name}/{value}", metricHandler.Update)
-	mux.Post("/update/", metricHandler.UpdateJSON)
-	mux.Post("/update", metricHandler.UpdateJSON)
-	mux.Post("/updates/", metricHandler.UpdateBatch)
+
+	if app.Parameters.CryptoKey != "" {
+		decoder := NewDecoderMiddleware(app.Parameters.CryptoKey)
+		mux.Group(func(r chi.Router) {
+			r.Use(decoder.Decode)
+			r.Post("/update/", metricHandler.UpdateJSON)
+			r.Post("/update", metricHandler.UpdateJSON)
+			r.Post("/updates/", metricHandler.UpdateBatch)
+		})
+	} else {
+		mux.Post("/update/", metricHandler.UpdateJSON)
+		mux.Post("/update", metricHandler.UpdateJSON)
+		mux.Post("/updates/", metricHandler.UpdateBatch)
+	}
+
 	mux.Post("/value/", metricHandler.GetJSONValue)
 	mux.Post("/value", metricHandler.GetJSONValue)
+
 	mux.Get("/value/{type}/{name}", metricHandler.GetValue)
 	mux.Get("/", metricHandler.Get)
 	mux.Get("/ping", metricHandler.Ping)
