@@ -15,7 +15,7 @@ func Routes(app *config.AppConfig, db *sql.DB, metricservice *metricsservice.Met
 	metricHandler := handler.NewMetricHandler(metricservice, app.Parameters.Key, db)
 	mux := chi.NewRouter()
 	if app.Parameters.TrustedSubnet != "" {
-		ipfilter := NewIpFilterMiddleware(app.Parameters.TrustedSubnet)
+		ipfilter := NewIPFilterMiddleware(app.Parameters.TrustedSubnet)
 		mux.Use(ipfilter.Filter)
 	}
 	mux.Use(GzipHandle)

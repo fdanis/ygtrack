@@ -7,22 +7,22 @@ import (
 	"net/http"
 )
 
-type IpFilterMiddleware struct {
+type IPFilterMiddleware struct {
 	net *net.IPNet
 }
 
-func NewIpFilterMiddleware(cidr string) *IpFilterMiddleware {
+func NewIPFilterMiddleware(cidr string) *IPFilterMiddleware {
 	if cidr == "" {
-		return &IpFilterMiddleware{}
+		return &IPFilterMiddleware{}
 	}
 	_, n, err := net.ParseCIDR(cidr)
 	if err != nil {
 		panic("CIDR is not valid")
 	}
-	return &IpFilterMiddleware{net: n}
+	return &IPFilterMiddleware{net: n}
 }
 
-func (f *IpFilterMiddleware) Filter(next http.Handler) http.Handler {
+func (f *IPFilterMiddleware) Filter(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if f.net == nil {
 			return
