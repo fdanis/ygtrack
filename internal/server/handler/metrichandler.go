@@ -16,7 +16,7 @@ import (
 	"github.com/go-chi/chi"
 )
 
-type DbChecker interface {
+type DBChecker interface {
 	Ping() error
 }
 
@@ -24,10 +24,10 @@ type DbChecker interface {
 type MetricHandler struct {
 	service   *ms.MetricsService
 	hashkey   string
-	dbchecker DbChecker
+	dbchecker DBChecker
 }
 
-func NewMetricHandler(service *ms.MetricsService, hashkey string, dbchecker DbChecker) MetricHandler {
+func NewMetricHandler(service *ms.MetricsService, hashkey string, dbchecker DBChecker) MetricHandler {
 	result := MetricHandler{
 		service:   service,
 		hashkey:   hashkey,
