@@ -45,6 +45,8 @@ func (m *Metrics) UnmarshalJSON(data []byte) error {
 			}
 			m.Delta = &delta
 		}
+	default:
+		break
 	}
 	return nil
 }

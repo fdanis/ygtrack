@@ -20,7 +20,15 @@ import (
 	_ "github.com/golang-migrate/migrate/source/file"
 )
 
+//go:generate go run ../generator/genvar.go string
+var (
+	buildVersion = "N/A"
+	buildDate    = "N/A"
+	buildCommit  = "N/A"
+)
+
 func main() {
+	printInfoVar()
 	app := config.AppConfig{}
 	//read environments
 	app.Parameters.ReadFlags()
