@@ -16,7 +16,11 @@ import (
 
 	"github.com/fdanis/ygtrack/internal/agent"
 	"github.com/fdanis/ygtrack/internal/agent/memstat"
+	"github.com/fdanis/ygtrack/internal/constants"
 	"github.com/fdanis/ygtrack/internal/helpers"
+	pb "github.com/fdanis/ygtrack/proto"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	//"github.com/fdanis/ygtrack/internal/helpers/fakehttphelper"
 )
 
@@ -62,7 +66,18 @@ func main() {
 	printInfoVar()
 	go Update(ctx, config.PollInterval, m)
 	go UpdateGopsUtil(ctx, config.PollInterval, m)
-	go Send(ctx, config, m, s)
+
+	if !config.UseGrpc {
+		go Send(ctx, config, m, s)
+	} else {
+		conn, err := grpc.Dial(config.Address, grpc.WithTransportCredentials(insecure.NewCredentials()))
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer conn.Close()
+		c := pb.NewMetricServiceClient(conn)
+		go SendGrpc(ctx, config, m, s, c)
+	}
 
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
@@ -117,6 +132,59 @@ func Send(ctx context.Context, conf agent.Conf, m *memstat.MetricService, s *mem
 				}
 				log.Println("sending")
 				s.Send("http://"+strings.TrimRight(conf.Address, "/")+"/update", metrics)
+			}
+		case <-ctx.Done():
+			{
+				fmt.Println("send ticker stoped")
+				t.Stop()
+				return
+			}
+		}
+	}
+}
+
+func SendGrpc(ctx context.Context, conf agent.Conf, m *memstat.MetricService, s *memstat.SenderMetric, client pb.MetricServiceClient) {
+	t := time.NewTicker(conf.ReportInterval)
+	for {
+		select {
+		case <-t.C:
+			{
+				metrics := m.GetMetrics()
+				if conf.Key != "" {
+					err := helpers.SetHash(conf.Key, metrics)
+					if err != nil {
+						// don't send if error exists
+						break
+					}
+				}
+				log.Println("sending")
+				stream, err := client.SendList(ctx)
+				if err != nil {
+					// don't send if error exists
+					log.Println("can not get streaam")
+				}
+
+				for _, item := range metrics {
+					p := &pb.Metrics{
+						Id:    item.ID,
+						MType: pb.Metrics_MetricsType(pb.Metrics_MetricsType_value[strings.ToUpper(item.MType)]),
+						Hash:  item.Hash,
+					}
+					if item.MType == constants.MetricsTypeCounter {
+						p.Delta = *item.Delta
+					} else {
+						p.Value = *item.Value
+					}
+					log.Printf("%v.Send(%v) = %v", stream, item, err)
+					if err := stream.Send(p); err != nil {
+						log.Printf("%v.Send(%v) = %v", stream, item, err)
+					}
+
+				}
+				_, err = stream.CloseAndRecv()
+				if err != nil {
+					log.Printf("%v.CloseAndRecv() got error %v, want %v", stream, err, nil)
+				}
 			}
 		case <-ctx.Done():
 			{

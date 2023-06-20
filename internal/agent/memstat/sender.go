@@ -6,9 +6,11 @@ import (
 	"crypto/rsa"
 	"crypto/sha256"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"net/http"
 
 	"github.com/fdanis/ygtrack/internal/helpers"
@@ -146,6 +148,11 @@ func post(client *http.Client, url string, header map[string]string, data *bytes
 	for k, v := range header {
 		r.Header.Add(k, v)
 	}
+	ip, err := localIP()
+	if err != nil {
+		return err
+	}
+	r.Header.Add("X-Real-IP", ip.String())
 	res, err := client.Do(r)
 	if err != nil {
 		return err
@@ -153,7 +160,42 @@ func post(client *http.Client, url string, header map[string]string, data *bytes
 
 	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {
-		return fmt.Errorf("got wrong http status (%d)", res.StatusCode)
+		b, err := io.ReadAll(res.Body)
+		if err != nil {
+			return fmt.Errorf("got wrong http status (%d)", res.StatusCode)
+		}
+		return fmt.Errorf("got wrong http status (%d) %s", res.StatusCode, b)
 	}
 	return nil
+}
+
+func localIP() (net.IP, error) {
+	ifaces, err := net.Interfaces()
+	if err != nil {
+		return nil, err
+	}
+	for _, i := range ifaces {
+		addrs, err := i.Addrs()
+		if err != nil {
+			return nil, err
+		}
+
+		for _, addr := range addrs {
+			var ip net.IP
+			switch v := addr.(type) {
+			case *net.IPNet:
+				ip = v.IP
+			case *net.IPAddr:
+				ip = v.IP
+			}
+
+			ip = ip.To4()
+			if ip == nil {
+				continue 
+			}
+			return ip, nil
+		}
+	}
+
+	return nil, errors.New("no IP")
 }

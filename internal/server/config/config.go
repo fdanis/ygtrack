@@ -32,12 +32,14 @@ type AppConfig struct {
 
 type Environment struct {
 	Address          string        `env:"ADDRESS" json:"address"`
+	GrpcAddress      string        `env:"GRPC_ADDRESS" json:"grpc_address"`
 	StoreInterval    time.Duration `env:"STORE_INTERVAL" json:"store_interval"`
 	StoreFile        string        `env:"STORE_FILE" json:"store_file"`
 	Restore          bool          `env:"RESTORE" json:"restore"`
 	Key              string        `env:"KEY"`
 	ConnectionString string        `env:"DATABASE_DSN" json:"database_dsn"`
 	CryptoKey        string        `env:"CRYPTO_KEY" json:"crypto_key"`
+	TrustedSubnet    string        `env:"TRUSTED_SUBNET" json:"trusted_subnet"`
 }
 
 func (c *Environment) ReadEnv() error {
@@ -51,7 +53,10 @@ func (c *Environment) ReadFlags() *string {
 	flag.StringVar(&c.StoreFile, "f", "/tmp/devops-metrics-db.json", "file path")
 	flag.StringVar(&c.Key, "k", "", "hash key")
 	flag.StringVar(&c.ConnectionString, "d", "", "connection string")
+	flag.StringVar(&c.TrustedSubnet, "t", "", "trusted subnet")
+	flag.StringVar(&c.GrpcAddress, "g", ":8082", "grpc host")
 	flag.StringVar(&c.CryptoKey, "crypto-key", "", "crypto-key")
+
 	file := ""
 	flag.StringVar(&file, "c", "", "file for config")
 	return &file
@@ -165,6 +170,12 @@ func (c *Environment) LoadFromConfigFile(file string) {
 		}
 		if c.CryptoKey == "" {
 			c.StoreFile = tmpConf.CryptoKey
+		}
+		if c.TrustedSubnet == "" {
+			c.TrustedSubnet = tmpConf.TrustedSubnet
+		}
+		if c.GrpcAddress == "" {
+			c.GrpcAddress = tmpConf.GrpcAddress
 		}
 	}
 }

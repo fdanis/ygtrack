@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	"net"
 	"os"
 	"os/signal"
 	"syscall"
@@ -15,11 +16,16 @@ import (
 	"github.com/fdanis/ygtrack/internal/driver"
 	"github.com/fdanis/ygtrack/internal/server"
 	"github.com/fdanis/ygtrack/internal/server/config"
+	"github.com/fdanis/ygtrack/internal/server/grpcservice"
+	"github.com/fdanis/ygtrack/internal/server/metricsservice"
 	"github.com/fdanis/ygtrack/internal/server/render"
 	"github.com/fdanis/ygtrack/internal/server/store/repository/metricrepository"
 	"github.com/fdanis/ygtrack/internal/server/store/repository/pgxmetricrepository"
+	"google.golang.org/grpc"
 
 	_ "net/http/pprof"
+
+	pb "github.com/fdanis/ygtrack/proto"
 
 	_ "github.com/golang-migrate/migrate/source/file"
 )
@@ -79,15 +85,31 @@ func main() {
 			log.Println(err)
 		}
 	}
+	metricservice := metricsservice.NewMetricsService(&app, db)
 	server := &http.Server{
 		Addr:    app.Parameters.Address,
-		Handler: server.Routes(&app, db),
+		Handler: server.Routes(&app, db, metricservice),
 	}
 
 	log.Printf("server started at %s\n", app.Parameters.Address)
 	go func() {
 		err = server.ListenAndServe()
 		if err != nil {
+			log.Fatal(err)
+		}
+	}()
+
+	lis, err := net.Listen("tcp", app.Parameters.GrpcAddress)
+	if err != nil {
+		log.Fatalf("failed to listen: %v", err)
+	}
+	var opts []grpc.ServerOption
+
+	grpcServer := grpc.NewServer(opts...)
+	pb.RegisterMetricServiceServer(grpcServer, grpcservice.NewGrpcMetricServer(metricservice))
+	go func() {
+		log.Printf("grpc server started at %s\n", app.Parameters.GrpcAddress)
+		if err := grpcServer.Serve(lis); err != nil {
 			log.Fatal(err)
 		}
 	}()
